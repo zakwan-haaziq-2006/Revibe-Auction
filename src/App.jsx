@@ -22,15 +22,18 @@ import {
 } from './utils/auctionSync';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
+  // Enforce mandatory Login Screen on initial load
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Clear any legacy auth keys from browser storage on mount
+  useEffect(() => {
     try {
       localStorage.removeItem('revibe_auth_user');
-      const saved = sessionStorage.getItem('revibe_auth_user');
-      return saved ? JSON.parse(saved) : null;
+      sessionStorage.removeItem('revibe_auth_user');
     } catch (err) {
-      return null;
+      // ignore
     }
-  });
+  }, []);
 
   // Load initial state from persistent storage or fall back to SGC default data
   const initialSyncState = loadAuctionState();
@@ -337,12 +340,6 @@ export default function App() {
 
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
-    try {
-      sessionStorage.setItem('revibe_auth_user', JSON.stringify(userData));
-      localStorage.removeItem('revibe_auth_user');
-    } catch (err) {
-      console.warn('Failed to save auth user:', err);
-    }
   };
 
   const handleLogout = () => {

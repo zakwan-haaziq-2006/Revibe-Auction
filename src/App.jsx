@@ -24,7 +24,8 @@ import {
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('revibe_auth_user');
+      localStorage.removeItem('revibe_auth_user');
+      const saved = sessionStorage.getItem('revibe_auth_user');
       return saved ? JSON.parse(saved) : null;
     } catch (err) {
       return null;
@@ -337,7 +338,8 @@ export default function App() {
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
     try {
-      localStorage.setItem('revibe_auth_user', JSON.stringify(userData));
+      sessionStorage.setItem('revibe_auth_user', JSON.stringify(userData));
+      localStorage.removeItem('revibe_auth_user');
     } catch (err) {
       console.warn('Failed to save auth user:', err);
     }
@@ -346,6 +348,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     try {
+      sessionStorage.removeItem('revibe_auth_user');
       localStorage.removeItem('revibe_auth_user');
     } catch (err) {
       console.warn('Failed to clear auth user:', err);

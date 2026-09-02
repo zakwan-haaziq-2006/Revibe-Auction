@@ -417,7 +417,6 @@ export default function App() {
         leadingTeam={leadingTeam}
         status={status}
         onLogout={handleLogout}
-        onPlaceBid={handlePlaceBid}
       />
     );
   }

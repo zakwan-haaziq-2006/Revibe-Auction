@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   LogOut, Wallet, TrendingUp, CreditCard, Shield, Users, 
-  Search, Award, UserCheck, AlertCircle, Radio, Sparkles, Gavel 
+  Search, Award, UserCheck, AlertCircle, Radio, Sparkles 
 } from 'lucide-react';
 
 export default function BidderDashboard({ 
@@ -10,8 +10,7 @@ export default function BidderDashboard({
   currentBid, 
   leadingTeam, 
   status, 
-  onLogout,
-  onPlaceBid
+  onLogout 
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL'); // 'ALL' | 'Batsman' | 'Bowler' | 'All-Rounder' | 'Wicketkeeper'
@@ -31,18 +30,7 @@ export default function BidderDashboard({
   const purseSpent = +(totalPurse - purseRemaining).toFixed(2);
   const acquiredPlayers = team.acquiredPlayers || [];
 
-  // Calculate next bid increment for IPL rules
-  const calculateNextIncrement = (price) => {
-    if (price < 1.0) return 0.10;
-    if (price < 2.0) return 0.10;
-    if (price < 5.0) return 0.20;
-    if (price < 10.0) return 0.50;
-    return 1.00;
-  };
-
-  const nextBidAmount = +(currentBid + calculateNextIncrement(currentBid)).toFixed(2);
   const isLeading = leadingTeam?.id === team.id;
-  const canBid = status === 'LIVE' && !isLeading && onPlaceBid && team.squadCount < 18 && purseRemaining >= nextBidAmount;
 
   // Filter acquired players
   const filteredPlayers = acquiredPlayers.filter((player) => {
@@ -192,46 +180,6 @@ export default function BidderDashboard({
                   {leadingTeam ? leadingTeam.name : 'No bids yet'}
                 </span>
               </div>
-
-              {/* Direct Franchise Place Bid Action */}
-              {onPlaceBid && (
-                <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                  <button
-                    onClick={() => onPlaceBid(team)}
-                    disabled={!canBid}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.6rem 1.25rem',
-                      borderRadius: '12px',
-                      border: 'none',
-                      background: canBid ? `linear-gradient(135deg, ${team.primaryColor}, #111)` : 'rgba(255,255,255,0.1)',
-                      color: canBid ? '#FFF' : 'rgba(255,255,255,0.4)',
-                      fontFamily: 'var(--font-subdisplay)',
-                      fontSize: '0.9rem',
-                      fontWeight: 800,
-                      cursor: canBid ? 'pointer' : 'not-allowed',
-                      boxShadow: canBid ? `0 4px 15px ${team.primaryColor}88` : 'none',
-                      transition: 'all 0.2s ease'
-                    }}
-                    title={
-                      isLeading
-                        ? 'Your team is already the highest bidder'
-                        : status !== 'LIVE'
-                        ? 'Auction is not live'
-                        : team.squadCount >= 18
-                        ? 'Squad cap reached (18 players)'
-                        : purseRemaining < nextBidAmount
-                        ? 'Insufficient purse'
-                        : `Place bid of ₹ ${nextBidAmount.toFixed(2)} Cr`
-                    }
-                  >
-                    <Gavel size={16} />
-                    <span>{isLeading ? 'CURRENT LEADER' : `BID ₹ ${nextBidAmount.toFixed(2)} Cr`}</span>
-                  </button>
-                </div>
-              )}
             </div>
           </section>
         )}

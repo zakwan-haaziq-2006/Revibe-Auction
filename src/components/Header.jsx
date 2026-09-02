@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Maximize, HelpCircle, RefreshCw, Gavel, Users, Shield, Menu, X, BookOpen } from 'lucide-react';
+import { Volume2, VolumeX, Maximize, HelpCircle, RefreshCw, Gavel, Users, Shield, Menu, X, BookOpen, LogOut } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
 export default function Header({ 
@@ -10,7 +10,8 @@ export default function Header({
   setActiveTab,
   onOpenHelp, 
   onOpenRules,
-  onResetData 
+  onResetData,
+  onLogout
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -40,8 +41,34 @@ export default function Header({
 
   return (
     <header className="header-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1000, position: 'relative' }}>
-      {/* Empty Left Spacer allowing native Revibe '26 logo on background image to show cleanly */}
-      <div style={{ flex: 1 }}></div>
+      {/* Admin Role Badge Indicator */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.75rem',
+              borderRadius: '10px',
+              border: '1px solid rgba(0,0,0,0.15)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(10px)',
+              color: '#EF4444',
+              fontFamily: 'var(--font-subdisplay)',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}
+            title="Log out of Admin console"
+          >
+            <LogOut size={14} />
+            <span>LOGOUT</span>
+          </button>
+        )}
+      </div>
 
       {/* Set indicator tag in center */}
       <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-subdisplay)', letterSpacing: '1px', color: 'var(--primary-red)', fontWeight: 700, background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(10px)', padding: '0.35rem 1rem', borderRadius: '20px', border: '1px solid rgba(230, 43, 52, 0.2)', boxShadow: '0 4px 15px rgba(0,0,0,0.06)' }}>
@@ -246,6 +273,33 @@ export default function Header({
               <BookOpen size={17} />
               <span>SGC AUCTION RULES</span>
             </button>
+
+            {onLogout && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onLogout();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.65rem',
+                  padding: '0.65rem 0.95rem',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#EF4444',
+                  fontFamily: 'var(--font-subdisplay)',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                <LogOut size={17} />
+                <span>LOGOUT ADMIN</span>
+              </button>
+            )}
           </div>
         )}
       </div>

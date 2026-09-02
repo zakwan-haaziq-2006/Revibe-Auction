@@ -10,10 +10,21 @@ import TeamDetailModal from './components/TeamDetailModal';
 import RulesModal from './components/RulesModal';
 import IntroScreen from './components/IntroScreen';
 import CategoryTransitionModal from './components/CategoryTransitionModal';
+import LoginScreen from './components/LoginScreen';
+import BidderDashboard from './components/BidderDashboard';
 import { INITIAL_TEAMS, INITIAL_PLAYERS } from './data/auctionData';
 import { sounds } from './utils/soundEffects';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('revibe_auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (err) {
+      return null;
+    }
+  });
+
   const [teams, setTeams] = useState(INITIAL_TEAMS);
   const [players, setPlayers] = useState(INITIAL_PLAYERS);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
@@ -231,9 +242,28 @@ export default function App() {
     }
   };
 
-  // Keyboard Event Listener
+  const handleLoginSuccess = (userData) => {
+    setCurrentUser(userData);
+    try {
+      localStorage.setItem('revibe_auth_user', JSON.stringify(userData));
+    } catch (err) {
+      console.warn('Failed to save auth user:', err);
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('revibe_auth_user');
+    } catch (err) {
+      console.warn('Failed to clear auth user:', err);
+    }
+  };
+
+  // Keyboard Event Listener (Admin Only)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (!currentUser || currentUser.role !== 'admin') return;
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (showIntro || showCategoryTransition) return;
 
@@ -274,8 +304,29 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [teams, handlePlaceBid, handleSold, handleUnsold, handleNextPlayer, showIntro, showCategoryTransition]);
+  }, [currentUser, teams, handlePlaceBid, handleSold, handleUnsold, handleNextPlayer, handleUndoBid, showIntro, showCategoryTransition]);
 
+  // 1. Not Authenticated Screen
+  if (!currentUser) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // 2. Bidder / Franchise Dashboard View
+  if (currentUser.role === 'bidder') {
+    const bidderTeam = teams.find((t) => t.id === currentUser.teamId) || teams[0];
+    return (
+      <BidderDashboard
+        team={bidderTeam}
+        currentPlayer={currentPlayer}
+        currentBid={currentBid}
+        leadingTeam={leadingTeam}
+        status={status}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // 3. Admin Auction Management Console
   return (
     <div className="admin-app">
       <div className="revibe-bg-watermark"></div>
@@ -309,6 +360,7 @@ export default function App() {
         onOpenHelp={() => setShowShortcutsModal(true)}
         onOpenRules={() => setShowRulesModal(true)}
         onResetData={handleResetData}
+        onLogout={handleLogout}
       />
 
       {/* Main Tabbed Views */}

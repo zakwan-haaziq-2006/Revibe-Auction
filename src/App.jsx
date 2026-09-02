@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import Header from './components/Header';
 import PlayerStage from './components/PlayerStage';
@@ -14,6 +14,12 @@ import LoginScreen from './components/LoginScreen';
 import BidderDashboard from './components/BidderDashboard';
 import { INITIAL_TEAMS, INITIAL_PLAYERS } from './data/auctionData';
 import { sounds } from './utils/soundEffects';
+import { 
+  saveAuctionState, 
+  loadAuctionState, 
+  subscribeToAuctionState, 
+  clearAuctionState 
+} from './utils/auctionSync';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -25,21 +31,24 @@ export default function App() {
     }
   });
 
-  const [teams, setTeams] = useState(INITIAL_TEAMS);
-  const [players, setPlayers] = useState(INITIAL_PLAYERS);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  // Load initial state from persistent storage or fall back to SGC default data
+  const initialSyncState = loadAuctionState();
+
+  const [teams, setTeams] = useState(initialSyncState?.teams || INITIAL_TEAMS);
+  const [players, setPlayers] = useState(initialSyncState?.players || INITIAL_PLAYERS);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(initialSyncState?.currentPlayerIndex ?? 0);
   const [activeTab, setActiveTab] = useState('bidding'); // 'bidding' | 'teams' | 'queue'
   
   const currentPlayer = players[currentPlayerIndex] || players[0];
   
-  const [currentBid, setCurrentBid] = useState(currentPlayer?.basePrice || 2.00);
-  const [leadingTeam, setLeadingTeam] = useState(null);
-  const [status, setStatus] = useState('LIVE'); // 'LIVE' | 'SOLD' | 'UNSOUND'
+  const [currentBid, setCurrentBid] = useState(initialSyncState?.currentBid ?? (currentPlayer?.basePrice || 2.00));
+  const [leadingTeam, setLeadingTeam] = useState(initialSyncState?.leadingTeam || null);
+  const [status, setStatus] = useState(initialSyncState?.status || 'LIVE'); // 'LIVE' | 'SOLD' | 'UNSOUND'
   
-  const [completedPlayersMap, setCompletedPlayersMap] = useState({});
-  const [bidHistory, setBidHistory] = useState([]);
-  const [bidLogs, setBidLogs] = useState([]);
-  const [lastSoldPlayer, setLastSoldPlayer] = useState(null);
+  const [completedPlayersMap, setCompletedPlayersMap] = useState(initialSyncState?.completedPlayersMap || {});
+  const [bidHistory, setBidHistory] = useState(initialSyncState?.bidHistory || []);
+  const [bidLogs, setBidLogs] = useState(initialSyncState?.bidLogs || []);
+  const [lastSoldPlayer, setLastSoldPlayer] = useState(initialSyncState?.lastSoldPlayer || null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -48,9 +57,82 @@ export default function App() {
   const [celebrationActive, setCelebrationActive] = useState(false);
 
   // Intro & Category Transition States
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(initialSyncState?.showIntro ?? true);
   const [showCategoryTransition, setShowCategoryTransition] = useState(false);
   const [categoryTransitionInfo, setCategoryTransitionInfo] = useState(null);
+
+  // Ref to prevent feedback loop when receiving remoteBroadcast state
+  const isReceivingRemoteSync = useRef(false);
+
+  // Real-time multi-tab BroadcastChannel & storage event subscription
+  useEffect(() => {
+    const unsubscribe = subscribeToAuctionState(
+      (newState) => {
+        isReceivingRemoteSync.current = true;
+        if (newState.teams) setTeams(newState.teams);
+        if (newState.players) setPlayers(newState.players);
+        if (typeof newState.currentPlayerIndex === 'number') setCurrentPlayerIndex(newState.currentPlayerIndex);
+        if (typeof newState.currentBid === 'number') setCurrentBid(newState.currentBid);
+        setLeadingTeam(newState.leadingTeam || null);
+        if (newState.status) setStatus(newState.status);
+        if (newState.completedPlayersMap) setCompletedPlayersMap(newState.completedPlayersMap);
+        if (newState.bidHistory) setBidHistory(newState.bidHistory);
+        if (newState.bidLogs) setBidLogs(newState.bidLogs);
+        if (newState.lastSoldPlayer !== undefined) setLastSoldPlayer(newState.lastSoldPlayer);
+        if (typeof newState.showIntro === 'boolean') setShowIntro(newState.showIntro);
+      },
+      () => {
+        isReceivingRemoteSync.current = true;
+        setTeams(INITIAL_TEAMS);
+        setPlayers(INITIAL_PLAYERS);
+        setCurrentPlayerIndex(0);
+        setCurrentBid(INITIAL_PLAYERS[0]?.basePrice || 2.00);
+        setLeadingTeam(null);
+        setStatus('LIVE');
+        setCompletedPlayersMap({});
+        setBidHistory([]);
+        setBidLogs([]);
+        setLastSoldPlayer(null);
+        setShowIntro(true);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // Save to localStorage & broadcast whenever local state changes
+  useEffect(() => {
+    if (isReceivingRemoteSync.current) {
+      isReceivingRemoteSync.current = false;
+      return;
+    }
+
+    saveAuctionState({
+      teams,
+      players,
+      currentPlayerIndex,
+      currentBid,
+      leadingTeam,
+      status,
+      completedPlayersMap,
+      bidHistory,
+      bidLogs,
+      lastSoldPlayer,
+      showIntro
+    });
+  }, [
+    teams,
+    players,
+    currentPlayerIndex,
+    currentBid,
+    leadingTeam,
+    status,
+    completedPlayersMap,
+    bidHistory,
+    bidLogs,
+    lastSoldPlayer,
+    showIntro
+  ]);
 
   // Dynamic IPL bid increment rule
   const calculateNextIncrement = (price) => {
@@ -125,7 +207,16 @@ export default function App() {
             squadRoleCounts: newRoleCounts,
             acquiredPlayers: [
               ...t.acquiredPlayers,
-              { name: currentPlayer.name, price: currentBid, role: currentPlayer.role }
+              { 
+                id: currentPlayer.id,
+                name: currentPlayer.name, 
+                price: currentBid, 
+                bidAmount: currentBid,
+                role: currentPlayer.role,
+                isOverseas: currentPlayer.isOverseas,
+                country: currentPlayer.country || 'India',
+                image: currentPlayer.image
+              }
             ]
           };
         }
@@ -228,6 +319,7 @@ export default function App() {
 
   const handleResetData = () => {
     if (window.confirm('Reset all IPL Auction data to initial SGC ₹80 Cr purse state?')) {
+      clearAuctionState();
       setTeams(INITIAL_TEAMS);
       setPlayers(INITIAL_PLAYERS);
       setCurrentPlayerIndex(0);
@@ -322,6 +414,7 @@ export default function App() {
         leadingTeam={leadingTeam}
         status={status}
         onLogout={handleLogout}
+        onPlaceBid={handlePlaceBid}
       />
     );
   }

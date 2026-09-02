@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   LogOut, Wallet, TrendingUp, CreditCard, Shield, Users, 
-  Search, Award, UserCheck, AlertCircle, Radio, Sparkles 
+  Search, Award, UserCheck, AlertCircle, Radio, Sparkles, Gavel 
 } from 'lucide-react';
 
 export default function BidderDashboard({ 
@@ -10,7 +10,8 @@ export default function BidderDashboard({
   currentBid, 
   leadingTeam, 
   status, 
-  onLogout 
+  onLogout,
+  onPlaceBid
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL'); // 'ALL' | 'Batsman' | 'Bowler' | 'All-Rounder' | 'Wicketkeeper'
@@ -29,6 +30,19 @@ export default function BidderDashboard({
   const purseRemaining = team.purseRemaining ?? 80.0;
   const purseSpent = +(totalPurse - purseRemaining).toFixed(2);
   const acquiredPlayers = team.acquiredPlayers || [];
+
+  // Calculate next bid increment for IPL rules
+  const calculateNextIncrement = (price) => {
+    if (price < 1.0) return 0.10;
+    if (price < 2.0) return 0.10;
+    if (price < 5.0) return 0.20;
+    if (price < 10.0) return 0.50;
+    return 1.00;
+  };
+
+  const nextBidAmount = +(currentBid + calculateNextIncrement(currentBid)).toFixed(2);
+  const isLeading = leadingTeam?.id === team.id;
+  const canBid = status === 'LIVE' && !isLeading && onPlaceBid && team.squadCount < 18 && purseRemaining >= nextBidAmount;
 
   // Filter acquired players
   const filteredPlayers = acquiredPlayers.filter((player) => {
@@ -150,11 +164,18 @@ export default function BidderDashboard({
         {/* LIVE STAGE COMPACT MONITOR */}
         {currentPlayer && (
           <section className="live-stage-monitor-banner">
-            <div className="monitor-header">
-              <Sparkles size={16} style={{ color: '#D4AF37' }} />
-              <span>LIVE AUCTION MONITOR</span>
+            <div className="monitor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Sparkles size={16} style={{ color: '#D4AF37' }} />
+                <span>LIVE AUCTION MONITOR</span>
+              </div>
+              {isLeading && (
+                <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '12px', background: '#10B98122', color: '#10B981', fontWeight: 700, border: '1px solid #10B98144' }}>
+                  YOUR TEAM IS CURRENTLY LEADING
+                </span>
+              )}
             </div>
-            <div className="monitor-body">
+            <div className="monitor-body" style={{ alignItems: 'center' }}>
               <div className="monitor-player-info">
                 <span className="monitor-player-role">{currentPlayer.role} • {currentPlayer.country || 'India'}</span>
                 <h3 className="monitor-player-name">{currentPlayer.name}</h3>
@@ -171,6 +192,46 @@ export default function BidderDashboard({
                   {leadingTeam ? leadingTeam.name : 'No bids yet'}
                 </span>
               </div>
+
+              {/* Direct Franchise Place Bid Action */}
+              {onPlaceBid && (
+                <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+                  <button
+                    onClick={() => onPlaceBid(team)}
+                    disabled={!canBid}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.6rem 1.25rem',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: canBid ? `linear-gradient(135deg, ${team.primaryColor}, #111)` : 'rgba(255,255,255,0.1)',
+                      color: canBid ? '#FFF' : 'rgba(255,255,255,0.4)',
+                      fontFamily: 'var(--font-subdisplay)',
+                      fontSize: '0.9rem',
+                      fontWeight: 800,
+                      cursor: canBid ? 'pointer' : 'not-allowed',
+                      boxShadow: canBid ? `0 4px 15px ${team.primaryColor}88` : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title={
+                      isLeading
+                        ? 'Your team is already the highest bidder'
+                        : status !== 'LIVE'
+                        ? 'Auction is not live'
+                        : team.squadCount >= 18
+                        ? 'Squad cap reached (18 players)'
+                        : purseRemaining < nextBidAmount
+                        ? 'Insufficient purse'
+                        : `Place bid of ₹ ${nextBidAmount.toFixed(2)} Cr`
+                    }
+                  >
+                    <Gavel size={16} />
+                    <span>{isLeading ? 'CURRENT LEADER' : `BID ₹ ${nextBidAmount.toFixed(2)} Cr`}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -213,7 +274,7 @@ export default function BidderDashboard({
           {filteredPlayers.length > 0 ? (
             <div className="acquired-players-grid">
               {filteredPlayers.map((player, idx) => (
-                <div key={idx} className="acquired-player-card">
+                <div key={player.id || idx} className="acquired-player-card">
                   <div className="player-card-badge" style={{ backgroundColor: team.primaryColor }}>
                     {idx + 1}
                   </div>
@@ -221,12 +282,14 @@ export default function BidderDashboard({
                     <h3 className="player-name">{player.name}</h3>
                     <div className="player-meta-tags">
                       <span className="meta-tag role-tag">{player.role}</span>
-                      {player.isOverseas && <span className="meta-tag overseas-tag">✈️ Overseas</span>}
+                      {(player.isOverseas || (player.country && player.country !== 'India')) && (
+                        <span className="meta-tag overseas-tag">✈️ {player.country || 'Overseas'}</span>
+                      )}
                     </div>
                   </div>
                   <div className="player-card-price">
                     <span className="price-label">Purse Spent</span>
-                    <span className="price-value">₹ {player.price.toFixed(2)} Cr</span>
+                    <span className="price-value">₹ {(player.price || player.bidAmount || 0).toFixed(2)} Cr</span>
                   </div>
                 </div>
               ))}
@@ -247,3 +310,4 @@ export default function BidderDashboard({
     </div>
   );
 }
+

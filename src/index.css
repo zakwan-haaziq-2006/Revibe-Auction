@@ -1797,3 +1797,268 @@ html, body {
   max-width: 420px;
 }
 
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE DESIGN STYLES
+   ========================================== */
+
+@media (max-width: 1024px) {
+  .purse-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+  .purse-card {
+    padding: 1rem;
+  }
+  .purse-card-value {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 768px) {
+  html, body {
+    overflow-y: auto !important;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .admin-app {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+    overflow-y: auto;
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .bidder-dashboard-container {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+
+  .bidder-header {
+    padding: 0.65rem 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .bidder-header-left {
+    gap: 0.65rem;
+  }
+
+  .bidder-team-badge {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  .bidder-team-name {
+    font-size: 1.1rem;
+  }
+
+  .bidder-header-right {
+    gap: 0.4rem;
+  }
+
+  .live-status-pill {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.72rem;
+  }
+
+  .bidder-content {
+    padding: 0.75rem;
+    gap: 0.85rem;
+  }
+
+  .purse-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .purse-card {
+    padding: 0.85rem 1rem;
+    gap: 0.85rem;
+  }
+
+  .squad-metrics-bar {
+    padding: 0.65rem 0.85rem;
+    gap: 0.65rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .role-distribution-group {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .live-stage-monitor-banner {
+    padding: 0.85rem 1rem;
+  }
+
+  .monitor-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .monitor-bid-info, .monitor-leading-info {
+    align-items: flex-start;
+  }
+
+  .acquired-players-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  /* Admin Center Bidding Stage Mobile Fixes */
+  .center-stage-container {
+    height: auto;
+    overflow-y: auto;
+    gap: 0.75rem;
+  }
+
+  .auction-stage-box {
+    padding: 0.25rem;
+  }
+
+  .player-avatar-wrapper {
+    width: min(280px, 80vw);
+    height: min(320px, 45vh);
+  }
+
+  .player-name-display {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  .stage-bidding-console {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    max-width: 100%;
+  }
+
+  .bid-box-card, .leading-team-card {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .bid-amount-value {
+    font-size: 1.8rem;
+  }
+
+  /* Action Bar Controls Mobile Stacking */
+  .action-bar-container {
+    flex-direction: column;
+    padding: 0.65rem 0.85rem;
+    gap: 0.65rem;
+    border-radius: 14px;
+  }
+
+  .bidding-increments {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .increment-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.78rem;
+    flex: 1;
+    min-width: 60px;
+    text-align: center;
+  }
+
+  .primary-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .btn-sold {
+    flex: 2;
+    font-size: 1.25rem;
+    padding: 0.5rem 1rem;
+    justify-content: center;
+  }
+
+  .btn-unsold {
+    flex: 1;
+    font-size: 1.1rem;
+    padding: 0.5rem 0.75rem;
+    justify-content: center;
+  }
+
+  .btn-next {
+    flex: 1;
+    font-size: 0.82rem;
+    padding: 0.5rem 0.75rem;
+    justify-content: center;
+  }
+
+  /* Login Screen Mobile Fixes */
+  .login-card-container {
+    padding: 1.25rem;
+    margin: 0.5rem;
+    max-width: 100%;
+  }
+
+  .login-title {
+    font-size: 1.4rem;
+  }
+
+  .section-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .controls-group {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-input-wrapper {
+    width: 100%;
+  }
+
+  .search-input-wrapper input {
+    width: 100%;
+  }
+
+  .role-select-filter {
+    width: 100%;
+  }
+
+  .header-set-tag {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-script {
+    font-size: 1.6rem;
+  }
+
+  .player-avatar-wrapper {
+    width: min(240px, 75vw);
+    height: min(270px, 38vh);
+  }
+
+  .player-name-display {
+    font-size: 1.8rem;
+  }
+
+  .primary-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-sold, .btn-unsold, .btn-next {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+

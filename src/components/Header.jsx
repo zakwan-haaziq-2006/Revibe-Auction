@@ -71,7 +71,7 @@ export default function Header({
       </div>
 
       {/* Set indicator tag in center */}
-      <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-subdisplay)', letterSpacing: '1px', color: 'var(--primary-red)', fontWeight: 700, background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(10px)', padding: '0.35rem 1rem', borderRadius: '20px', border: '1px solid rgba(230, 43, 52, 0.2)', boxShadow: '0 4px 15px rgba(0,0,0,0.06)' }}>
+      <div className="header-set-tag" style={{ fontSize: '0.8rem', fontFamily: 'var(--font-subdisplay)', letterSpacing: '1px', color: 'var(--primary-red)', fontWeight: 700, background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(10px)', padding: '0.35rem 1rem', borderRadius: '20px', border: '1px solid rgba(230, 43, 52, 0.2)', boxShadow: '0 4px 15px rgba(0,0,0,0.06)' }}>
         {currentSet || 'SET 1 — MARQUEE PLAYERS'}
       </div>
 

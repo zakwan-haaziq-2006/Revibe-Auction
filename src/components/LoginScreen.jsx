@@ -15,17 +15,10 @@ export default function LoginScreen({ onLoginSuccess }) {
     setErrorMsg('');
   };
 
-  const handleQuickFillAdmin = () => {
-    setLoginMode('admin');
-    setUsername(ADMIN_CREDENTIALS.username);
-    setPassword(ADMIN_CREDENTIALS.password);
-    setErrorMsg('');
-  };
-
   const handleQuickFillTeam = (team) => {
     setLoginMode('bidder');
     setUsername(team.username);
-    setPassword(team.password);
+    setPassword('');
     setErrorMsg('');
   };
 
@@ -155,20 +148,12 @@ export default function LoginScreen({ onLoginSuccess }) {
           </button>
         </form>
 
-        {/* Quick Credentials Auto-Fill Helpers */}
+        {/* Franchise Team Selectors */}
         <div className="quick-credentials-section">
           <div className="quick-cred-title">
-            <Sparkles size={14} /> Quick Demo Login Credentials
+            <Sparkles size={14} /> Quick Select Franchise Team
           </div>
           <div className="quick-cred-buttons">
-            <button
-              type="button"
-              className="quick-cred-chip admin-chip"
-              onClick={handleQuickFillAdmin}
-            >
-              👑 Admin Demo
-            </button>
-
             {INITIAL_TEAMS.slice(0, 5).map((team) => (
               <button
                 key={team.id}
@@ -177,12 +162,9 @@ export default function LoginScreen({ onLoginSuccess }) {
                 style={{ borderColor: team.primaryColor, color: '#FFF' }}
                 onClick={() => handleQuickFillTeam(team)}
               >
-                🏏 {team.code} Demo
+                🏏 {team.code}
               </button>
             ))}
-          </div>
-          <div className="quick-cred-hint">
-            Pattern: Team usernames are <code>csk</code>, <code>mi</code>, <code>rcb</code>, etc. with passwords <code>csk@revibe</code>, <code>mi@revibe</code>, etc.
           </div>
         </div>
       </div>

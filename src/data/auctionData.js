@@ -1,6 +1,6 @@
 export const ADMIN_CREDENTIALS = {
-  username: 'admin.auction@revibe',
-  password: 'auction@revibe.2026'
+  username: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_USERNAME) || 'admin.auction@revibe',
+  password: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_PASSWORD) || 'RevibeAuction@2026!Admin'
 };
 
 export const INITIAL_TEAMS = [

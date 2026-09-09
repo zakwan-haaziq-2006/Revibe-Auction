@@ -17,6 +17,7 @@ import { sounds } from './utils/soundEffects';
 import { 
   saveAuctionState, 
   loadAuctionState, 
+  loadAuctionStateFromCloud,
   subscribeToAuctionState, 
   clearAuctionState 
 } from './utils/auctionSync';
@@ -86,8 +87,19 @@ export default function App() {
     if (typeof newState.showIntro === 'boolean') setShowIntro(newState.showIntro);
   }, []);
 
-  // Real-time multi-tab BroadcastChannel & storage event subscription
+  // Real-time Cloud SSE, multi-tab BroadcastChannel & storage event subscription
   useEffect(() => {
+    // 1. Initial hydration: load from local storage, then immediately check cloud for latest cross-device state
+    const local = loadAuctionState();
+    if (local) {
+      applyRemoteState(local);
+    }
+    loadAuctionStateFromCloud().then((cloudState) => {
+      if (cloudState) {
+        applyRemoteState(cloudState);
+      }
+    });
+
     const unsubscribe = subscribeToAuctionState(
       (newState) => {
         applyRemoteState(newState);
@@ -111,26 +123,34 @@ export default function App() {
     return () => unsubscribe();
   }, [applyRemoteState]);
 
-  // Resilient fallback sync for non-admin sessions (bidders & login screen)
+  // Resilient fallback sync for non-admin sessions (mobile phones, bidder portals)
   useEffect(() => {
     if (currentUser && currentUser.role === 'admin') return;
 
-    const syncFromStorage = () => {
+    const syncState = () => {
       const latest = loadAuctionState();
       if (latest) {
         applyRemoteState(latest);
       }
     };
 
-    // Sync on window focus
-    window.addEventListener('focus', syncFromStorage);
+    // Continuous 1-second local storage poll
+    const interval = setInterval(syncState, 1000);
+    window.addEventListener('focus', syncState);
 
-    // Continuous 1-second interval to guarantee user side reflects live auction without delay
-    const interval = setInterval(syncFromStorage, 1000);
+    // Periodic cloud poll every 2.5 seconds to guarantee phones catch up even if locked/asleep
+    const cloudPollInterval = setInterval(() => {
+      loadAuctionStateFromCloud().then((cloudState) => {
+        if (cloudState) {
+          applyRemoteState(cloudState);
+        }
+      });
+    }, 2500);
 
     return () => {
-      window.removeEventListener('focus', syncFromStorage);
+      window.removeEventListener('focus', syncState);
       clearInterval(interval);
+      clearInterval(cloudPollInterval);
     };
   }, [currentUser, applyRemoteState]);
 
@@ -453,11 +473,16 @@ export default function App() {
 
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
-    // Immediately hydrate state from localStorage upon login to show the active live player
+    // Immediately hydrate state from local storage and cloud upon login
     const latestState = loadAuctionState();
     if (latestState) {
       applyRemoteState(latestState);
     }
+    loadAuctionStateFromCloud().then((cloudState) => {
+      if (cloudState) {
+        applyRemoteState(cloudState);
+      }
+    });
   };
 
   const handleLogout = () => {

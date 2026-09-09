@@ -15,8 +15,10 @@ export default function ShortcutsModal({ onClose }) {
     { key: 'J', description: 'Bid for Rajasthan Royals (RR)' },
     { key: 'SPACE / ENTER', description: 'Mark current player as SOLD to leading team' },
     { key: 'U', description: 'Mark current player as UNSOLD' },
-    { key: 'N', description: 'Advance to NEXT player in queue' },
-    { key: 'Ctrl + Z', description: 'Undo last bid' }
+    { key: '→ / N', description: 'Advance to NEXT player' },
+    { key: '←', description: 'Return to PREVIOUS player' },
+    { key: 'Ctrl + Z', description: 'Undo last bid / action' },
+    { key: 'Ctrl + Y', description: 'Redo last undone bid / action' }
   ];
 
   return (

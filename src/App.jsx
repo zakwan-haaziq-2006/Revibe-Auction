@@ -51,6 +51,7 @@ export default function App() {
   
   const [completedPlayersMap, setCompletedPlayersMap] = useState(initialSyncState?.completedPlayersMap || {});
   const [bidHistory, setBidHistory] = useState(initialSyncState?.bidHistory || []);
+  const [redoHistory, setRedoHistory] = useState([]);
   const [bidLogs, setBidLogs] = useState(initialSyncState?.bidLogs || []);
   const [lastSoldPlayer, setLastSoldPlayer] = useState(initialSyncState?.lastSoldPlayer || null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -203,8 +204,9 @@ export default function App() {
 
     setBidHistory((prev) => [
       ...prev,
-      { leadingTeam, currentBid }
+      { leadingTeam, currentBid, status, teamsState: teams, completedMap: completedPlayersMap }
     ]);
+    setRedoHistory([]);
 
     setBidLogs((prev) => [
       ...prev,
@@ -214,11 +216,17 @@ export default function App() {
     setLeadingTeam(team);
     setCurrentBid(nextBidAmount);
     sounds.playBidSound();
-  }, [status, showIntro, showCategoryTransition, leadingTeam, currentBid]);
+  }, [status, showIntro, showCategoryTransition, leadingTeam, currentBid, teams, completedPlayersMap]);
 
   // Handle SOLD button click
   const handleSold = useCallback(() => {
     if (!leadingTeam || status !== 'LIVE' || showIntro || showCategoryTransition) return;
+
+    setBidHistory((prev) => [
+      ...prev,
+      { leadingTeam, currentBid, status: 'LIVE', teamsState: teams, completedMap: completedPlayersMap }
+    ]);
+    setRedoHistory([]);
 
     setStatus('SOLD');
     setCompletedPlayersMap((prev) => ({ ...prev, [currentPlayer.id]: 'SOLD' }));
@@ -266,16 +274,21 @@ export default function App() {
     setTimeout(() => {
       setCelebrationActive(false);
     }, 1000);
-  }, [leadingTeam, status, showIntro, showCategoryTransition, currentPlayer, currentBid]);
+  }, [leadingTeam, status, showIntro, showCategoryTransition, currentPlayer, currentBid, teams, completedPlayersMap]);
 
   // Handle UNSOLD button click
   const handleUnsold = useCallback(() => {
     if (status !== 'LIVE' || showIntro || showCategoryTransition) return;
+    setBidHistory((prev) => [
+      ...prev,
+      { leadingTeam, currentBid, status: 'LIVE', teamsState: teams, completedMap: completedPlayersMap }
+    ]);
+    setRedoHistory([]);
     setStatus('UNSOLD');
     setCompletedPlayersMap((prev) => ({ ...prev, [currentPlayer.id]: 'UNSOLD' }));
-  }, [status, showIntro, showCategoryTransition, currentPlayer]);
+  }, [status, showIntro, showCategoryTransition, currentPlayer, leadingTeam, currentBid, teams, completedPlayersMap]);
 
-  // Handle NEXT PLAYER (With Category Completion Detection)
+  // Handle NEXT PLAYER (Arrow Right / N Key)
   const handleNextPlayer = useCallback(() => {
     if (showIntro || showCategoryTransition) return;
 
@@ -301,6 +314,20 @@ export default function App() {
     setLeadingTeam(null);
     setStatus('LIVE');
     setBidHistory([]);
+    setRedoHistory([]);
+  }, [currentPlayerIndex, players, showIntro, showCategoryTransition]);
+
+  // Handle PREVIOUS PLAYER (Arrow Left / P Key)
+  const handlePreviousPlayer = useCallback(() => {
+    if (showIntro || showCategoryTransition) return;
+
+    const prevIdx = (currentPlayerIndex - 1 + players.length) % players.length;
+    setCurrentPlayerIndex(prevIdx);
+    setCurrentBid(players[prevIdx].basePrice);
+    setLeadingTeam(null);
+    setStatus('LIVE');
+    setBidHistory([]);
+    setRedoHistory([]);
   }, [currentPlayerIndex, players, showIntro, showCategoryTransition]);
 
   // Proceed to Next Category handler
@@ -313,6 +340,7 @@ export default function App() {
       setLeadingTeam(null);
       setStatus('LIVE');
       setBidHistory([]);
+      setRedoHistory([]);
     }
     setShowCategoryTransition(false);
     setCategoryTransitionInfo(null);
@@ -325,24 +353,73 @@ export default function App() {
     setCurrentBid(players[0].basePrice);
     setLeadingTeam(null);
     setStatus('LIVE');
+    setBidHistory([]);
+    setRedoHistory([]);
   };
 
   // Manual Increments
   const handleManualIncrement = (amount) => {
     if (status !== 'LIVE' || showIntro || showCategoryTransition) return;
-    setBidHistory((prev) => [...prev, { leadingTeam, currentBid }]);
+    setBidHistory((prev) => [
+      ...prev,
+      { leadingTeam, currentBid, status, teamsState: teams, completedMap: completedPlayersMap }
+    ]);
+    setRedoHistory([]);
     setCurrentBid((prev) => +(prev + amount).toFixed(2));
     sounds.playBidSound();
   };
 
-  // Undo Last Bid
+  // Undo Last Action / Mistaken Bid
   const handleUndoBid = useCallback(() => {
-    if (bidHistory.length === 0 || status !== 'LIVE' || showIntro || showCategoryTransition) return;
+    if (bidHistory.length === 0 || showIntro || showCategoryTransition) return;
     const lastState = bidHistory[bidHistory.length - 1];
+
+    setRedoHistory((prev) => [
+      ...prev,
+      {
+        leadingTeam,
+        currentBid,
+        status,
+        teamsState: teams,
+        completedMap: completedPlayersMap
+      }
+    ]);
+
     setLeadingTeam(lastState.leadingTeam);
     setCurrentBid(lastState.currentBid);
+    if (lastState.status) setStatus(lastState.status);
+    if (lastState.teamsState) setTeams(lastState.teamsState);
+    if (lastState.completedMap) setCompletedPlayersMap(lastState.completedMap);
+
     setBidHistory((prev) => prev.slice(0, -1));
-  }, [bidHistory, status, showIntro, showCategoryTransition]);
+    sounds.playBidSound();
+  }, [bidHistory, leadingTeam, currentBid, status, teams, completedPlayersMap, showIntro, showCategoryTransition]);
+
+  // Redo Undone Action / Bid
+  const handleRedoBid = useCallback(() => {
+    if (redoHistory.length === 0 || showIntro || showCategoryTransition) return;
+    const nextState = redoHistory[redoHistory.length - 1];
+
+    setBidHistory((prev) => [
+      ...prev,
+      {
+        leadingTeam,
+        currentBid,
+        status,
+        teamsState: teams,
+        completedMap: completedPlayersMap
+      }
+    ]);
+
+    setLeadingTeam(nextState.leadingTeam);
+    setCurrentBid(nextState.currentBid);
+    if (nextState.status) setStatus(nextState.status);
+    if (nextState.teamsState) setTeams(nextState.teamsState);
+    if (nextState.completedMap) setCompletedPlayersMap(nextState.completedMap);
+
+    setRedoHistory((prev) => prev.slice(0, -1));
+    sounds.playBidSound();
+  }, [redoHistory, leadingTeam, currentBid, status, teams, completedPlayersMap, showIntro, showCategoryTransition]);
 
   const handleSelectPlayerFromQueue = (player) => {
     const idx = players.findIndex((p) => p.id === player.id);
@@ -352,6 +429,7 @@ export default function App() {
       setLeadingTeam(null);
       setStatus('LIVE');
       setBidHistory([]);
+      setRedoHistory([]);
       setActiveTab('bidding');
     }
   };
@@ -401,7 +479,47 @@ export default function App() {
 
       const key = e.key.toUpperCase();
 
-      // Letter & Number Key mappings
+      // Undo (Ctrl+Z) and Redo (Ctrl+Y or Ctrl+Shift+Z)
+      if (e.ctrlKey && key === 'Z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedoBid();
+        } else {
+          handleUndoBid();
+        }
+        return;
+      } else if (e.ctrlKey && key === 'Y') {
+        e.preventDefault();
+        handleRedoBid();
+        return;
+      }
+
+      // Player Navigation (ArrowRight / N, ArrowLeft / P)
+      if (e.key === 'ArrowRight' || key === 'N') {
+        e.preventDefault();
+        handleNextPlayer();
+        return;
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePreviousPlayer();
+        return;
+      }
+
+      // Sold & Unsold shortcuts
+      if (e.code === 'Space' || key === 'ENTER') {
+        e.preventDefault();
+        handleSold();
+        return;
+      } else if (key === 'U') {
+        e.preventDefault();
+        handleUnsold();
+        return;
+      } else if (key === '?') {
+        setShowShortcutsModal((prev) => !prev);
+        return;
+      }
+
+      // Letter & Number Key mappings for Teams
       const teamHotkeyMap = {
         'C': 'csk', '1': 'csk',
         'M': 'mi',  '2': 'mi',
@@ -420,23 +538,12 @@ export default function App() {
         if (targetTeam) {
           handlePlaceBid(targetTeam);
         }
-      } else if (e.code === 'Space' || key === 'ENTER') {
-        e.preventDefault();
-        handleSold();
-      } else if (key === 'U') {
-        handleUnsold();
-      } else if (key === 'N') {
-        handleNextPlayer();
-      } else if (key === '?') {
-        setShowShortcutsModal((prev) => !prev);
-      } else if (e.ctrlKey && key === 'Z') {
-        handleUndoBid();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentUser, teams, handlePlaceBid, handleSold, handleUnsold, handleNextPlayer, handleUndoBid, showIntro, showCategoryTransition]);
+  }, [currentUser, teams, handlePlaceBid, handleSold, handleUnsold, handleNextPlayer, handlePreviousPlayer, handleUndoBid, handleRedoBid, showIntro, showCategoryTransition]);
 
   // 1. Not Authenticated Screen
   if (!currentUser) {
@@ -518,7 +625,11 @@ export default function App() {
               onSold={handleSold}
               onUnsold={handleUnsold}
               onNextPlayer={handleNextPlayer}
+              onPreviousPlayer={handlePreviousPlayer}
               onUndoBid={handleUndoBid}
+              onRedoBid={handleRedoBid}
+              canUndo={bidHistory.length > 0}
+              canRedo={redoHistory.length > 0}
               onManualIncrement={handleManualIncrement}
               canSold={!!leadingTeam}
               status={status}

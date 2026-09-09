@@ -101,7 +101,7 @@ export default function Header({
             title="Play 10-Second Countdown & Intro Animation"
           >
             <Play size={14} fill="currentColor" />
-            <span>INTRO & TIMER</span>
+            <span>REPLAY INTRO</span>
           </button>
         )}
 

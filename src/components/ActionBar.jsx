@@ -1,12 +1,16 @@
 import React from 'react';
-import { Gavel, XCircle, ArrowRight, RotateCcw, Plus } from 'lucide-react';
+import { Gavel, XCircle, ArrowRight, ArrowLeft, RotateCcw, RotateCw } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
 export default function ActionBar({ 
   onSold, 
   onUnsold, 
   onNextPlayer, 
+  onPreviousPlayer,
   onUndoBid, 
+  onRedoBid,
+  canUndo = true,
+  canRedo = false,
   onManualIncrement,
   canSold,
   status 
@@ -26,38 +30,72 @@ export default function ActionBar({
     onNextPlayer();
   };
 
+  const handlePrevClick = () => {
+    if (onPreviousPlayer) {
+      sounds.playNextSound();
+      onPreviousPlayer();
+    }
+  };
+
   return (
     <div className="action-bar-container">
-      {/* Bid Bumps & Increments */}
+      {/* Bid Bumps & Increments + Undo / Redo */}
       <div className="bidding-increments">
-        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginRight: '0.25rem' }}>
-          MANUAL BUMP:
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
+          BUMP:
         </span>
-        <button className="increment-btn" onClick={() => onManualIncrement(0.20)}>
-          +₹ 20L
+        <button className="increment-btn" onClick={() => onManualIncrement(0.20)} title="Bump Bid by ₹ 20 Lakh">
+          +20L
         </button>
-        <button className="increment-btn" onClick={() => onManualIncrement(0.50)}>
-          +₹ 50L
+        <button className="increment-btn" onClick={() => onManualIncrement(0.50)} title="Bump Bid by ₹ 50 Lakh">
+          +50L
         </button>
-        <button className="increment-btn" onClick={() => onManualIncrement(1.00)}>
-          +₹ 1.00 Cr
+        <button className="increment-btn" onClick={() => onManualIncrement(1.00)} title="Bump Bid by ₹ 1.00 Crore">
+          +1.00 Cr
         </button>
-        <button className="increment-btn" onClick={() => onManualIncrement(2.00)}>
-          +₹ 2.00 Cr
+        <button className="increment-btn" onClick={() => onManualIncrement(2.00)} title="Bump Bid by ₹ 2.00 Crore">
+          +2.00 Cr
         </button>
 
+        {/* Dedicated Undo Button */}
         <button 
-          className="icon-btn" 
+          className="action-undo-btn" 
           onClick={onUndoBid}
-          title="Undo Last Bid (Ctrl+Z)"
-          style={{ marginLeft: '0.25rem' }}
+          disabled={!canUndo}
+          title="Undo Last Action / Mistaken Bid (Ctrl+Z)"
         >
-          <RotateCcw size={16} />
+          <RotateCcw size={15} />
+          <span>UNDO</span>
         </button>
+
+        {/* Dedicated Redo Button */}
+        {onRedoBid && (
+          <button 
+            className="action-undo-btn" 
+            onClick={onRedoBid}
+            disabled={!canRedo}
+            title="Redo Undone Bid (Ctrl+Y)"
+            style={{ opacity: canRedo ? 1 : 0.4 }}
+          >
+            <RotateCw size={15} />
+            <span>REDO</span>
+          </button>
+        )}
       </div>
 
-      {/* Primary Action Buttons */}
+      {/* Primary Action Buttons (Prev, SOLD, UNSOLD, Next) */}
       <div className="primary-actions">
+        {/* PREVIOUS PLAYER (Arrow Left) */}
+        <button 
+          className="btn-nav btn-prev" 
+          onClick={handlePrevClick}
+          title="Previous Player (Left Arrow [←] or P Key)"
+        >
+          <ArrowLeft size={18} />
+          <span>PREV</span>
+          <span className="key-hint">[←]</span>
+        </button>
+
         {/* SOLD Button */}
         <button 
           className="btn-sold" 
@@ -69,11 +107,9 @@ export default function ActionBar({
           }}
           title="Mark Player as SOLD (Spacebar)"
         >
-          <Gavel size={24} />
+          <Gavel size={22} />
           <span>SOLD</span>
-          <span style={{ fontSize: '0.65rem', opacity: 0.8, fontStyle: 'italic', marginLeft: '0.2rem' }}>
-            [SPACE]
-          </span>
+          <span className="key-hint">[SPACE]</span>
         </button>
 
         {/* UNSOLD Button */}
@@ -87,20 +123,20 @@ export default function ActionBar({
           }}
           title="Mark Player as UNSOLD (U Key)"
         >
-          <XCircle size={18} style={{ marginRight: '0.3rem', display: 'inline' }} />
+          <XCircle size={18} />
           <span>UNSOLD</span>
-          <span style={{ fontSize: '0.65rem', opacity: 0.8, marginLeft: '0.2rem' }}>[U]</span>
+          <span className="key-hint">[U]</span>
         </button>
 
-        {/* NEXT PLAYER Control */}
+        {/* NEXT PLAYER Control (Arrow Right) */}
         <button 
-          className="btn-next" 
+          className="btn-nav btn-next" 
           onClick={handleNextClick}
-          title="Advance to Next Player (N Key)"
+          title="Advance to Next Player (Right Arrow [→] or N Key)"
         >
-          <span>NEXT PLAYER</span>
+          <span>NEXT</span>
           <ArrowRight size={18} />
-          <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>[N]</span>
+          <span className="key-hint">[→]</span>
         </button>
       </div>
     </div>

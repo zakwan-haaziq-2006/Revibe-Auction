@@ -26,11 +26,14 @@ export default function App() {
   // Enforce mandatory Login Screen on initial load
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Clear any legacy auth keys from browser storage on mount
+  // Clear any legacy auth keys and old test data from browser storage on mount
   useEffect(() => {
     try {
       localStorage.removeItem('revibe_auth_user');
       sessionStorage.removeItem('revibe_auth_user');
+      localStorage.removeItem('revibe_auction_state_v1');
+      localStorage.removeItem('revibe_auction_state_v2');
+      localStorage.removeItem('revibe_auction_state_v3');
     } catch (err) {
       // ignore
     }

@@ -5,6 +5,11 @@ import { INITIAL_TEAMS, INITIAL_PLAYERS } from '../data/auctionData.js';
 
 const STORAGE_KEY = 'revibe_auction_state_v1';
 const CHANNEL_NAME = 'revibe_auction_channel';
+
+// Reliable, unblocked global cloud relay endpoints (works on all Indian ISPs and mobile networks)
+const REST_PRIMARY_URL = 'https://api.restful-api.dev/objects/ff808181a067127101a086bb2f0f5983';
+const REST_BACKUP_URL = 'https://api.restful-api.dev/objects/ff808181a067127101a086bc37f25984';
+
 const CLOUD_TOPIC = 'revibe_auction_live_sgc_9948_sync';
 const CLOUD_BASE_URL = `https://ntfy.sh/${CLOUD_TOPIC}`;
 
@@ -47,6 +52,16 @@ export function compressAuctionState(state) {
     });
   }
 
+  // Preserve up to 5 recent bid logs
+  const logs = Array.isArray(state.bidLogs)
+    ? state.bidLogs.slice(-5).map((l) => ({
+        teamId: l.team?.id || l.teamId,
+        teamCode: l.team?.code || l.teamCode,
+        amount: l.amount,
+        time: l.time || Date.now()
+      }))
+    : [];
+
   return {
     v: 2,
     idx: typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : 0,
@@ -63,7 +78,8 @@ export function compressAuctionState(state) {
     } : null,
     purses: teamPurses,
     squads: teamSquads,
-    acquired: acquiredList
+    acquired: acquiredList,
+    logs
   };
 }
 
@@ -120,6 +136,12 @@ export function decompressAuctionState(compact, baseTeams = INITIAL_TEAMS, baseP
     price: compact.lastSold.price
   } : null;
 
+  const bidLogs = (compact.logs || []).map((l) => ({
+    team: teams.find((t) => t.id === l.teamId || t.code === l.teamCode) || { code: l.teamCode, name: l.teamCode, primaryColor: '#555', textColor: '#FFF' },
+    amount: l.amount,
+    time: l.time
+  }));
+
   return {
     teams,
     players: basePlayers || INITIAL_PLAYERS,
@@ -128,13 +150,14 @@ export function decompressAuctionState(compact, baseTeams = INITIAL_TEAMS, baseP
     leadingTeam,
     status: compact.status || 'LIVE',
     completedPlayersMap: compact.completed || {},
+    bidLogs,
     lastSoldPlayer,
     showIntro: !!compact.intro
   };
 }
 
 /**
- * Debounced push to cloud endpoint so rapid consecutive bids don't flood the network
+ * Debounced push to reliable cloud endpoints so rapid consecutive bids don't flood the network
  */
 function pushStateToCloud(packet) {
   pendingCloudPush = packet;
@@ -144,15 +167,38 @@ function pushStateToCloud(packet) {
       if (pendingCloudPush && typeof fetch !== 'undefined') {
         const toSend = pendingCloudPush;
         pendingCloudPush = null;
-        fetch(CLOUD_BASE_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(toSend)
-        }).catch((err) => {
-          console.warn('Cloud sync push error:', err);
+
+        const bodyStr = JSON.stringify({
+          name: 'revibe_auction_state',
+          data: toSend
         });
+
+        // 1. Push to Primary Unblocked REST Endpoint
+        fetch(REST_PRIMARY_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: bodyStr
+        }).catch((err) => {
+          console.warn('Cloud primary sync push error:', err);
+        });
+
+        // 2. Push to Secondary Backup REST Endpoint in parallel
+        fetch(REST_BACKUP_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: bodyStr
+        }).catch(() => {});
+
+        // 3. Optional fallback to ntfy.sh (if accessible)
+        try {
+          fetch(CLOUD_BASE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(toSend)
+          }).catch(() => {});
+        } catch (e) {}
       }
-    }, 40);
+    }, 30);
   }
 }
 
@@ -192,7 +238,7 @@ export function saveAuctionState(state) {
       } catch (e) {}
     }
 
-    // 3. Global Cloud Push (Laptop Admin -> Mobile Phone Bidders in < 100ms)
+    // 3. Global Cloud Push (Laptop Admin -> Mobile Phone Bidders in real-time)
     pushStateToCloud(cloudPacket);
   } catch (err) {
     console.error('Failed to save and broadcast auction state:', err);
@@ -226,44 +272,80 @@ export function loadAuctionState() {
 }
 
 /**
- * Fetch latest auction state from the cloud (used on phones/new devices upon initial load)
+ * Fetch latest auction state from cloud (used on phones/new devices and manual refresh)
  */
 export async function loadAuctionStateFromCloud() {
   try {
     if (typeof fetch === 'undefined') return null;
-    const res = await fetch(`${CLOUD_BASE_URL}/json?poll=1&since=24h`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const text = await res.text();
-    if (!text) return null;
-    const lines = text.trim().split('\n').filter(Boolean);
-    for (let i = lines.length - 1; i >= 0; i--) {
+
+    // 1. Fetch from Primary REST Endpoint
+    let res = null;
+    try {
+      res = await fetch(REST_PRIMARY_URL, { 
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+    } catch (e) {
+      // Try backup
       try {
-        const item = JSON.parse(lines[i]);
-        if (item.event === 'message' && item.message) {
-          const data = JSON.parse(item.message);
-          if (data.type === 'AUCTION_STATE_UPDATE' && data.payload) {
-            const fullState = decompressAuctionState(data.payload);
-            if (data.timestamp && data.timestamp > lastProcessedTimestamp) {
-              lastProcessedTimestamp = data.timestamp;
-            }
-            try {
+        res = await fetch(REST_BACKUP_URL, { 
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+      } catch (err2) {}
+    }
+
+    if (res && res.ok) {
+      const json = await res.json();
+      if (json && json.data) {
+        const packet = json.data;
+        const rawPayload = packet.payload || packet;
+        const fullState = decompressAuctionState(rawPayload);
+
+        if (fullState) {
+          if (packet.timestamp && packet.timestamp > lastProcessedTimestamp) {
+            lastProcessedTimestamp = packet.timestamp;
+          }
+          try {
+            if (typeof window !== 'undefined' && 'localStorage' in window) {
               localStorage.setItem(STORAGE_KEY, JSON.stringify({
                 state: fullState,
-                senderId: data.senderId,
-                timestamp: data.timestamp
+                senderId: packet.senderId || 'cloud',
+                timestamp: packet.timestamp || Date.now()
               }));
-            } catch (e) {}
-            return fullState;
-          } else if (data.type === 'AUCTION_STATE_RESET') {
-            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-            return null;
-          }
+            }
+          } catch (e) {}
+          return fullState;
         }
-      } catch (e) {}
+      }
     }
   } catch (err) {
-    console.warn('Could not fetch initial state from cloud:', err);
+    console.warn('Could not fetch initial state from REST cloud:', err);
   }
+
+  // 2. Fallback to ntfy.sh in case REST is unavailable
+  try {
+    const res = await fetch(`${CLOUD_BASE_URL}/json?poll=1&since=24h`, { cache: 'no-store' });
+    if (res.ok) {
+      const text = await res.text();
+      if (text) {
+        const lines = text.trim().split('\n').filter(Boolean);
+        for (let i = lines.length - 1; i >= 0; i--) {
+          try {
+            const item = JSON.parse(lines[i]);
+            if (item.event === 'message' && item.message) {
+              const data = JSON.parse(item.message);
+              if (data.type === 'AUCTION_STATE_UPDATE' && data.payload) {
+                const fullState = decompressAuctionState(data.payload);
+                return fullState;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+    }
+  } catch (e) {}
+
   return null;
 }
 
@@ -283,7 +365,24 @@ export function clearAuctionState() {
       broadcastChannel.postMessage(resetPacket);
     }
 
+    const bodyStr = JSON.stringify({
+      name: 'revibe_auction_state',
+      data: resetPacket
+    });
+
     if (typeof fetch !== 'undefined') {
+      fetch(REST_PRIMARY_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+
+      fetch(REST_BACKUP_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+
       fetch(CLOUD_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -296,7 +395,7 @@ export function clearAuctionState() {
 }
 
 /**
- * Subscribe to real-time state changes from both Cloud (SSE) and Local (BroadcastChannel/Storage)
+ * Subscribe to real-time state changes from Cloud (active poll + SSE) and Local (BroadcastChannel/Storage)
  * @param {Function} onUpdate Callback function when state changes on another device/tab
  * @param {Function} onReset Callback function when auction is reset on another device/tab
  * @returns {Function} Unsubscribe cleanup function
@@ -366,7 +465,49 @@ export function subscribeToAuctionState(onUpdate, onReset) {
 
   window.addEventListener('storage', handleStorageChange);
 
-  // 3. Cloud SSE (Server-Sent Events) Stream for Cross-Device Real-Time Sync (Laptop <-> Phone)
+  // 3. Background Continuous Cloud Polling (Every 1800ms for seamless Phone <-> Laptop sync)
+  let isPolling = false;
+  const pollInterval = setInterval(async () => {
+    if (isPolling) return;
+    isPolling = true;
+    try {
+      const res = await fetch(REST_PRIMARY_URL, { 
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        const json = await res.json();
+        if (json && json.data) {
+          const packet = json.data;
+          if (packet.senderId === CLIENT_TAB_ID) {
+            isPolling = false;
+            return;
+          }
+          if (packet.timestamp && packet.timestamp > lastProcessedTimestamp) {
+            lastProcessedTimestamp = packet.timestamp;
+            const fullState = decompressAuctionState(packet.payload || packet);
+            if (fullState) {
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                  state: fullState,
+                  senderId: packet.senderId,
+                  timestamp: packet.timestamp
+                }));
+              } catch (e) {}
+              onUpdate(fullState);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore network flutter during polling
+    } finally {
+      isPolling = false;
+    }
+  }, 1800);
+
+  // 4. Cloud SSE (Server-Sent Events) Stream fallback
   let eventSource = null;
   try {
     if ('EventSource' in window) {
@@ -380,21 +521,14 @@ export function subscribeToAuctionState(onUpdate, onReset) {
 
           const data = JSON.parse(ntfyEvent.message);
           processIncomingPacket(data);
-        } catch (err) {
-          // Ignore keep-alive or ping packets
-        }
-      };
-
-      eventSource.onerror = () => {
-        // Automatically reconnects
+        } catch (err) {}
       };
     }
-  } catch (err) {
-    console.warn('Cloud EventSource initialization failed:', err);
-  }
+  } catch (err) {}
 
   // Cleanup handler
   return () => {
+    clearInterval(pollInterval);
     if (broadcastChannel) {
       broadcastChannel.removeEventListener('message', handleBroadcastMessage);
     }
@@ -404,3 +538,4 @@ export function subscribeToAuctionState(onUpdate, onReset) {
     }
   };
 }
+

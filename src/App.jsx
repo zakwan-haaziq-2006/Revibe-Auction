@@ -154,6 +154,34 @@ export default function App() {
     };
   }, [currentUser, applyRemoteState]);
 
+  // Manual refresh handler for Bidder Dashboard and Login Screen
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(Date.now());
+
+  const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const cloudState = await loadAuctionStateFromCloud();
+      if (cloudState) {
+        applyRemoteState(cloudState);
+        setLastSyncTime(Date.now());
+        return true;
+      } else {
+        const local = loadAuctionState();
+        if (local) {
+          applyRemoteState(local);
+          setLastSyncTime(Date.now());
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('Manual refresh failed:', err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+    return false;
+  }, [applyRemoteState]);
+
   // Save to localStorage & broadcast whenever local state changes — STRICTLY ADMIN ONLY!
   useEffect(() => {
     // Only Admin can write and broadcast auction state to prevent bidder tabs from overwriting live data
@@ -572,7 +600,13 @@ export default function App() {
 
   // 1. Not Authenticated Screen
   if (!currentUser) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <LoginScreen 
+        onLoginSuccess={handleLoginSuccess} 
+        onRefresh={handleManualRefresh}
+        isRefreshing={isRefreshing}
+      />
+    );
   }
 
   // 2. Bidder / Franchise Dashboard View
@@ -590,6 +624,9 @@ export default function App() {
         lastSoldPlayer={lastSoldPlayer}
         showIntro={showIntro}
         onLogout={handleLogout}
+        onRefresh={handleManualRefresh}
+        isRefreshing={isRefreshing}
+        lastSyncTime={lastSyncTime}
       />
     );
   }

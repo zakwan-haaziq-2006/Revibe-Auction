@@ -1516,6 +1516,158 @@ html, body {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
 }
 
+/* Bidder Refresh Button in Header */
+.bidder-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+  color: #B45309;
+  font-family: var(--font-subdisplay);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
+}
+
+.bidder-refresh-btn:hover {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.28), rgba(212, 175, 55, 0.12));
+  border-color: #D4AF37;
+  color: #78350F;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+}
+
+.bidder-refresh-btn:active {
+  transform: translateY(0);
+}
+
+.bidder-refresh-btn.refreshing {
+  border-color: #3B82F6;
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563EB;
+}
+
+.bidder-refresh-btn.synced {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.spin-anim {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.arena-quick-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #F3F4F6;
+  font-family: var(--font-subdisplay);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.arena-quick-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #D4AF37;
+  color: #FBBF24;
+}
+
+/* Awaiting Stage Card */
+.awaiting-stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  background: rgba(17, 24, 39, 0.65);
+  border-radius: 16px;
+  border: 1px dashed rgba(212, 175, 55, 0.3);
+}
+
+.awaiting-stage-card h3 {
+  font-family: var(--font-subdisplay);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #F3F4F6;
+  margin-top: 0.75rem;
+}
+
+.awaiting-stage-card p {
+  color: #9CA3AF;
+  font-size: 0.9rem;
+  margin-top: 0.35rem;
+  max-width: 420px;
+}
+
+/* Login Screen Sync Bar */
+.login-sync-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.45rem 0.85rem;
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.login-sync-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #10B981;
+}
+
+.sync-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  animation: pulse 1.8s infinite;
+}
+
+.login-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.login-refresh-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: #D4AF37;
+  color: #FFF;
+}
+
 .bidder-content {
   flex: 1;
   overflow-y: auto;
@@ -2329,6 +2481,11 @@ html, body {
 
   .bidder-header-right {
     gap: 0.4rem;
+  }
+
+  .bidder-refresh-btn {
+    padding: 0.32rem 0.65rem;
+    font-size: 0.74rem;
   }
 
   .live-status-pill {

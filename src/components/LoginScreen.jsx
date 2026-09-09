@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Shield, Users, Lock, User, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { Shield, Users, Lock, User, ArrowRight, AlertCircle, Sparkles, RotateCw } from 'lucide-react';
 import { ADMIN_CREDENTIALS, INITIAL_TEAMS } from '../data/auctionData';
 
-export default function LoginScreen({ onLoginSuccess }) {
+export default function LoginScreen({ onLoginSuccess, onRefresh, isRefreshing = false }) {
   const [loginMode, setLoginMode] = useState('bidder'); // 'admin' | 'bidder'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -80,6 +80,25 @@ export default function LoginScreen({ onLoginSuccess }) {
 
         <h2 className="login-title">IPL MEGA AUCTION PORTAL</h2>
         <p className="login-subtitle">Sign in to access your dashboard</p>
+
+        {/* Live Sync Status & Refresh Button */}
+        <div className="login-sync-bar">
+          <div className="login-sync-indicator">
+            <span className="sync-pulse-dot"></span>
+            <span>Live Cloud Sync</span>
+          </div>
+          {onRefresh && (
+            <button
+              type="button"
+              className={`login-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+              onClick={onRefresh}
+              title="Refresh Live Auction Data"
+            >
+              <RotateCw size={13} className={isRefreshing ? 'spin-anim' : ''} />
+              <span>{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
+            </button>
+          )}
+        </div>
 
         {/* Role Selector Tabs */}
         <div className="login-role-tabs">

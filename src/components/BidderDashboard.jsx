@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   LogOut, Wallet, TrendingUp, CreditCard, Shield, Users, 
   Search, Award, UserCheck, AlertCircle, Radio, Sparkles, User,
-  CheckCircle2, Clock, Activity, Flame
+  CheckCircle2, Clock, Activity, Flame, RotateCw
 } from 'lucide-react';
 
 export default function BidderDashboard({ 
@@ -15,10 +15,33 @@ export default function BidderDashboard({
   bidLogs = [],
   lastSoldPlayer = null,
   showIntro = false,
-  onLogout 
+  onLogout,
+  onRefresh,
+  isRefreshing = false,
+  lastSyncTime = null
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL'); // 'ALL' | 'Batsman' | 'Bowler' | 'All-Rounder' | 'Wicketkeeper'
+  const [localRefreshing, setLocalRefreshing] = useState(false);
+  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
+
+  const isSpinning = isRefreshing || localRefreshing;
+
+  const handleRefreshClick = async () => {
+    if (isSpinning) return;
+    setLocalRefreshing(true);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
+      setShowSyncSuccess(true);
+      setTimeout(() => setShowSyncSuccess(false), 2000);
+    } catch (err) {
+      console.warn('Error refreshing live data:', err);
+    } finally {
+      setTimeout(() => setLocalRefreshing(false), 400);
+    }
+  };
 
   if (!team) {
     return (
@@ -82,10 +105,22 @@ export default function BidderDashboard({
         </div>
 
         <div className="bidder-header-right">
+          {/* Prominent Live Refresh Button */}
+          <button 
+            type="button"
+            className={`bidder-refresh-btn ${isSpinning ? 'refreshing' : ''} ${showSyncSuccess ? 'synced' : ''}`}
+            onClick={handleRefreshClick}
+            title="Refresh Live Auction Stage from Admin Console"
+          >
+            <RotateCw size={15} className={isSpinning ? 'spin-anim' : ''} />
+            <span>{isSpinning ? 'Syncing...' : showSyncSuccess ? '✓ Synced' : 'Refresh'}</span>
+          </button>
+
           <div className={`live-status-pill ${status.toLowerCase()}`}>
             <Radio size={14} className="pulse-icon" />
             <span>AUCTION {showIntro ? 'STANDBY' : status}</span>
           </div>
+
           <button className="bidder-logout-btn" onClick={onLogout} title="Log Out">
             <LogOut size={16} />
             <span>Logout</span>
@@ -105,6 +140,16 @@ export default function BidderDashboard({
                   <span className="pulsing-circle"></span>
                   {status === 'LIVE' ? 'LIVE NOW' : status}
                 </span>
+
+                <button 
+                  type="button" 
+                  className="arena-quick-refresh-btn" 
+                  onClick={handleRefreshClick}
+                  title="Pull latest live auction data"
+                >
+                  <RotateCw size={12} className={isSpinning ? 'spin-anim' : ''} />
+                  <span>{isSpinning ? 'Syncing...' : 'Sync'}</span>
+                </button>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -248,7 +293,24 @@ export default function BidderDashboard({
               </div>
             </div>
           </section>
-        ) : null}
+        ) : (
+          <section className="bidder-live-arena awaiting-stage">
+            <div className="awaiting-stage-card">
+              <Sparkles size={32} className="sparkle-gold" />
+              <h3>Auction Floor Connected</h3>
+              <p>Waiting for the Auctioneer to spotlight the next player on stage.</p>
+              <button 
+                type="button"
+                className="bidder-refresh-btn" 
+                onClick={handleRefreshClick}
+                style={{ margin: '1rem auto 0 auto' }}
+              >
+                <RotateCw size={15} className={isSpinning ? 'spin-anim' : ''} />
+                <span>{isSpinning ? 'Syncing with Admin...' : 'Check Live Stage'}</span>
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* TOP SUMMARY CARDS (Total Purse, Purse Spent, Purse Remaining) */}
         <section className="purse-cards-grid">

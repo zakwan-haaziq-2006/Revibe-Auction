@@ -62,10 +62,11 @@ export default function ActionBar({
           className="action-undo-btn" 
           onClick={onUndoBid}
           disabled={!canUndo}
-          title="Undo Last Action / Mistaken Bid (Ctrl+Z)"
+          title="Undo Last Action / Mistaken Bid (Z Key)"
         >
-          <RotateCcw size={15} />
+          <RotateCcw size={14} />
           <span>UNDO</span>
+          <span className="key-hint">[Z]</span>
         </button>
 
         {/* Dedicated Redo Button */}
@@ -74,11 +75,12 @@ export default function ActionBar({
             className="action-undo-btn" 
             onClick={onRedoBid}
             disabled={!canRedo}
-            title="Redo Undone Bid (Ctrl+Y)"
+            title="Redo Undone Bid (Y Key)"
             style={{ opacity: canRedo ? 1 : 0.4 }}
           >
-            <RotateCw size={15} />
+            <RotateCw size={14} />
             <span>REDO</span>
+            <span className="key-hint">[Y]</span>
           </button>
         )}
       </div>

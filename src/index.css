@@ -281,7 +281,7 @@ html, body {
 /* Centered Player Card Frame (Transparent & Floating) */
 .marquee-player-card {
   width: 100%;
-  max-width: 650px;
+  max-width: 820px;
   background: transparent;
   border-radius: 0;
   padding: 0;
@@ -307,8 +307,8 @@ html, body {
 }
 
 .player-avatar-wrapper {
-  width: clamp(290px, 38vw, 480px);
-  height: clamp(260px, 48vh, 520px);
+  width: clamp(340px, 48vw, 620px);
+  height: clamp(280px, 52vh, 560px);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.45);
   backdrop-filter: blur(12px);
@@ -318,7 +318,7 @@ html, body {
   align-items: center;
   justify-content: center;
   margin: 0.1rem 0;
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.4), 0 0 30px rgba(230, 43, 52, 0.3);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45), 0 0 35px rgba(230, 43, 52, 0.35);
   position: relative;
   overflow: hidden;
   flex: 0 1 auto;
@@ -335,16 +335,27 @@ html, body {
   height: 100%;
   object-fit: cover;
   object-position: top center;
-  border-radius: 16px;
+  border-radius: 18px;
+  transform: scale(1.08);
+  transform-origin: top center;
 }
 
-.player-country-flag {
+.player-country-badge {
   position: absolute;
   top: 10px;
   right: 12px;
-  font-size: 1.6rem;
-  line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-family: var(--font-subdisplay);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  background: rgba(17, 17, 17, 0.88);
+  backdrop-filter: blur(8px);
+  color: #FFFFFF;
+  border: 1.5px solid #3B82F6;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
   z-index: 5;
 }
 
@@ -2550,8 +2561,8 @@ html, body {
   }
 
   .player-avatar-wrapper {
-    width: clamp(230px, 32vw, 320px);
-    height: clamp(210px, 42vh, 290px);
+    width: clamp(280px, 40vw, 440px);
+    height: clamp(220px, 46vh, 320px);
     border-radius: 18px;
     margin: 0.05rem 0;
   }

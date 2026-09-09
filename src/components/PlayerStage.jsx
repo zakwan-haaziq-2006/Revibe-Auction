@@ -56,9 +56,9 @@ export default function PlayerStage({ player, status, leadingTeam, currentBid })
               {player.status || 'Capped'}
             </span>
 
-            {/* Country Flag */}
-            <span className="player-country-flag" title={player.country}>
-              {player.flag || '🇮🇳'}
+            {/* Country Badge */}
+            <span className="player-country-badge" title={player.country}>
+              {player.flag ? `${player.flag} ` : ''}{player.country || 'INDIA'}
             </span>
 
             {(player.photoUrl || player.image) ? (

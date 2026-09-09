@@ -479,8 +479,8 @@ export default function App() {
 
       const key = e.key.toUpperCase();
 
-      // Undo (Ctrl+Z) and Redo (Ctrl+Y or Ctrl+Shift+Z)
-      if (e.ctrlKey && key === 'Z') {
+      // Undo (Direct 'Z' key or Ctrl+Z) and Redo (Direct 'Y' key, Ctrl+Y, or Shift+Z)
+      if (key === 'Z') {
         e.preventDefault();
         if (e.shiftKey) {
           handleRedoBid();
@@ -488,7 +488,7 @@ export default function App() {
           handleUndoBid();
         }
         return;
-      } else if (e.ctrlKey && key === 'Y') {
+      } else if (key === 'Y' || (e.ctrlKey && key === 'Y')) {
         e.preventDefault();
         handleRedoBid();
         return;

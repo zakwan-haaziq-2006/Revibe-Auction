@@ -63,7 +63,7 @@ export default function App() {
   const [celebrationActive, setCelebrationActive] = useState(false);
 
   // Intro & Category Transition States
-  const [showIntro, setShowIntro] = useState(initialSyncState?.showIntro ?? true);
+  const [showIntro, setShowIntro] = useState(initialSyncState?.showIntro ?? false);
   const [showCategoryTransition, setShowCategoryTransition] = useState(false);
   const [categoryTransitionInfo, setCategoryTransitionInfo] = useState(null);
 

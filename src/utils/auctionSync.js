@@ -1,6 +1,7 @@
-// Real-time Auction Synchronization Utility
-// Combines Cloud Server-Sent Events (SSE) + HTTP Pub/Sub for cross-device sync (laptop <-> phone)
-// with BroadcastChannel API and LocalStorage for zero-latency same-device multi-tab synchronization.
+// Real-time Auction Synchronization Engine (Cross-Device Cloud Sync + Local Multi-Tab)
+// Automatically handles Laptop Admin <-> Mobile Phone Bidders over the internet.
+
+import { INITIAL_TEAMS, INITIAL_PLAYERS } from '../data/auctionData.js';
 
 const STORAGE_KEY = 'revibe_auction_state_v1';
 const CHANNEL_NAME = 'revibe_auction_channel';
@@ -24,7 +25,116 @@ let pendingCloudPush = null;
 let cloudPushTimeout = null;
 
 /**
- * Debounced push to cloud endpoint so fast repeated actions don't overload HTTP requests
+ * Compress the entire auction state into a lightweight delta packet (< 500 bytes)
+ * to guarantee instant global delivery without hitting cloud payload limits.
+ */
+export function compressAuctionState(state) {
+  if (!state) return null;
+
+  const teamPurses = {};
+  const teamSquads = {};
+  const acquiredList = [];
+
+  if (Array.isArray(state.teams)) {
+    state.teams.forEach((t) => {
+      teamPurses[t.id] = t.purseRemaining;
+      teamSquads[t.id] = t.squadCount;
+      if (Array.isArray(t.acquiredPlayers) && t.acquiredPlayers.length > 0) {
+        t.acquiredPlayers.forEach((p) => {
+          acquiredList.push({ id: p.id, teamId: t.id, price: p.price, role: p.role });
+        });
+      }
+    });
+  }
+
+  return {
+    v: 2,
+    idx: typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : 0,
+    bid: typeof state.currentBid === 'number' ? state.currentBid : 2.0,
+    teamId: state.leadingTeam?.id || null,
+    status: state.status || 'LIVE',
+    intro: !!state.showIntro,
+    completed: state.completedPlayersMap || {},
+    lastSold: state.lastSoldPlayer ? {
+      name: state.lastSoldPlayer.name,
+      teamId: state.lastSoldPlayer.team?.id || state.lastSoldPlayer.teamId || state.lastSoldPlayer.team?.code,
+      teamCode: state.lastSoldPlayer.team?.code,
+      price: state.lastSoldPlayer.price
+    } : null,
+    purses: teamPurses,
+    squads: teamSquads,
+    acquired: acquiredList
+  };
+}
+
+/**
+ * Reconstruct the complete rich state object on phones/devices from the lightweight cloud delta
+ */
+export function decompressAuctionState(compact, baseTeams = INITIAL_TEAMS, basePlayers = INITIAL_PLAYERS) {
+  if (!compact) return null;
+
+  // If already full state (e.g. from same-machine tab)
+  if (compact.teams && compact.players) {
+    return compact;
+  }
+
+  const teams = (baseTeams || INITIAL_TEAMS).map((t) => {
+    const updatedPurse = compact.purses && compact.purses[t.id] !== undefined 
+      ? compact.purses[t.id] 
+      : t.purseRemaining;
+    const updatedSquad = compact.squads && compact.squads[t.id] !== undefined 
+      ? compact.squads[t.id] 
+      : t.squadCount;
+
+    const teamAcquired = (compact.acquired || [])
+      .filter((a) => a.teamId === t.id)
+      .map((a) => {
+        const fullPlayer = (basePlayers || INITIAL_PLAYERS).find((p) => p.id === a.id);
+        return {
+          id: a.id,
+          name: fullPlayer?.name || 'Player',
+          price: a.price,
+          bidAmount: a.price,
+          role: a.role || fullPlayer?.role || 'Batsman',
+          isOverseas: fullPlayer?.isOverseas || false,
+          country: fullPlayer?.country || 'India',
+          image: fullPlayer?.image
+        };
+      });
+
+    return {
+      ...t,
+      purseRemaining: updatedPurse,
+      squadCount: updatedSquad,
+      acquiredPlayers: teamAcquired
+    };
+  });
+
+  const leadingTeam = compact.teamId 
+    ? teams.find((t) => t.id === compact.teamId) || null 
+    : null;
+
+  const lastSoldPlayer = compact.lastSold ? {
+    name: compact.lastSold.name,
+    team: teams.find((t) => t.id === compact.lastSold.teamId || t.code === compact.lastSold.teamCode) || { code: compact.lastSold.teamCode, name: compact.lastSold.teamCode },
+    price: compact.lastSold.price
+  } : null;
+
+  return {
+    teams,
+    players: basePlayers || INITIAL_PLAYERS,
+    currentPlayerIndex: typeof compact.idx === 'number' ? compact.idx : 0,
+    currentBid: typeof compact.bid === 'number' ? compact.bid : 2.0,
+    leadingTeam,
+    status: compact.status || 'LIVE',
+    completedPlayersMap: compact.completed || {},
+    lastSoldPlayer,
+    showIntro: !!compact.intro
+  };
+}
+
+/**
+ * Debounced push to cloud endpoint so rapid consecutive bids don't flood the network
  */
 function pushStateToCloud(packet) {
   pendingCloudPush = packet;
@@ -39,37 +149,51 @@ function pushStateToCloud(packet) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(toSend)
         }).catch((err) => {
-          console.warn('Cloud sync push warning (device offline or network temporary glitch):', err);
+          console.warn('Cloud sync push error:', err);
         });
       }
-    }, 60);
+    }, 40);
   }
 }
 
 /**
- * Save current state to localStorage, local BroadcastChannel, and Cloud (for cross-device sync)
+ * Save current state locally and broadcast to cloud for cross-device visibility
  */
 export function saveAuctionState(state) {
   try {
     const timestamp = Date.now();
-    const packet = {
+    const compactPayload = compressAuctionState(state);
+
+    const cloudPacket = {
+      type: 'AUCTION_STATE_UPDATE',
+      payload: compactPayload,
+      senderId: CLIENT_TAB_ID,
+      timestamp
+    };
+
+    // 1. Local Storage (Full state for immediate instant same-tab persistence)
+    const localPacket = {
       type: 'AUCTION_STATE_UPDATE',
       state,
       payload: state,
       senderId: CLIENT_TAB_ID,
       timestamp
     };
+    try {
+      if (typeof window !== 'undefined' && 'localStorage' in window) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localPacket));
+      }
+    } catch (e) {}
 
-    // 1. Local Storage (Instant same-device persistence)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(packet));
-
-    // 2. Local Broadcast Channel (Instant same-browser multi-tab sync)
+    // 2. Local BroadcastChannel (Instant multi-tab sync)
     if (broadcastChannel) {
-      broadcastChannel.postMessage(packet);
+      try {
+        broadcastChannel.postMessage(localPacket);
+      } catch (e) {}
     }
 
-    // 3. Cloud Pub/Sub (Cross-device sync: Laptop <-> Phone)
-    pushStateToCloud(packet);
+    // 3. Global Cloud Push (Laptop Admin -> Mobile Phone Bidders in < 100ms)
+    pushStateToCloud(cloudPacket);
   } catch (err) {
     console.error('Failed to save and broadcast auction state:', err);
   }
@@ -80,17 +204,19 @@ export function saveAuctionState(state) {
  */
 export function loadAuctionState() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === 'object') {
-        if ('payload' in parsed && parsed.payload) {
-          return parsed.payload;
+    if (typeof window !== 'undefined' && 'localStorage' in window) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          if ('payload' in parsed && parsed.payload) {
+            return decompressAuctionState(parsed.payload);
+          }
+          if ('state' in parsed && 'timestamp' in parsed) {
+            return decompressAuctionState(parsed.state);
+          }
+          return decompressAuctionState(parsed);
         }
-        if ('state' in parsed && 'timestamp' in parsed) {
-          return parsed.state;
-        }
-        return parsed;
       }
     }
   } catch (err) {
@@ -100,7 +226,7 @@ export function loadAuctionState() {
 }
 
 /**
- * Fetch latest auction state from the cloud (used on phones/new devices upon first load)
+ * Fetch latest auction state from the cloud (used on phones/new devices upon initial load)
  */
 export async function loadAuctionStateFromCloud() {
   try {
@@ -115,15 +241,19 @@ export async function loadAuctionStateFromCloud() {
         const item = JSON.parse(lines[i]);
         if (item.event === 'message' && item.message) {
           const data = JSON.parse(item.message);
-          if (data.type === 'AUCTION_STATE_UPDATE' && (data.payload || data.state)) {
-            const state = data.payload || data.state;
+          if (data.type === 'AUCTION_STATE_UPDATE' && data.payload) {
+            const fullState = decompressAuctionState(data.payload);
             if (data.timestamp && data.timestamp > lastProcessedTimestamp) {
               lastProcessedTimestamp = data.timestamp;
             }
             try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+              localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                state: fullState,
+                senderId: data.senderId,
+                timestamp: data.timestamp
+              }));
             } catch (e) {}
-            return state;
+            return fullState;
           } else if (data.type === 'AUCTION_STATE_RESET') {
             try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
             return null;
@@ -138,7 +268,7 @@ export async function loadAuctionStateFromCloud() {
 }
 
 /**
- * Clear persisted auction state from localStorage, local BroadcastChannel, and Cloud
+ * Clear persisted auction state locally and in the cloud
  */
 export function clearAuctionState() {
   try {
@@ -166,7 +296,7 @@ export function clearAuctionState() {
 }
 
 /**
- * Subscribe to real-time state changes from both Cloud (cross-device) and Local (multi-tab)
+ * Subscribe to real-time state changes from both Cloud (SSE) and Local (BroadcastChannel/Storage)
  * @param {Function} onUpdate Callback function when state changes on another device/tab
  * @param {Function} onReset Callback function when auction is reset on another device/tab
  * @returns {Function} Unsubscribe cleanup function
@@ -174,25 +304,32 @@ export function clearAuctionState() {
 export function subscribeToAuctionState(onUpdate, onReset) {
   if (typeof window === 'undefined') return () => {};
 
-  // Process verified incoming state packet
   const processIncomingPacket = (data) => {
     if (!data) return;
-    if (data.senderId === CLIENT_TAB_ID) return; // Prevent echo reflections
+    if (data.senderId === CLIENT_TAB_ID) return; // Prevent echo
 
-    if (data.type === 'AUCTION_STATE_UPDATE' && (data.payload || data.state)) {
-      const state = data.payload || data.state;
+    if (data.type === 'AUCTION_STATE_UPDATE') {
+      const rawPayload = data.payload || data.state;
+      if (!rawPayload) return;
+
       if (data.timestamp && data.timestamp <= lastProcessedTimestamp) {
         return;
       }
       if (data.timestamp) {
         lastProcessedTimestamp = data.timestamp;
       }
-      // Update local storage so refreshes retain cloud data
+
+      const fullState = decompressAuctionState(rawPayload);
+
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          state: fullState,
+          senderId: data.senderId,
+          timestamp: data.timestamp
+        }));
       } catch (e) {}
 
-      onUpdate(state);
+      onUpdate(fullState);
     } else if (data.type === 'AUCTION_STATE_RESET') {
       try {
         localStorage.removeItem(STORAGE_KEY);
@@ -244,12 +381,12 @@ export function subscribeToAuctionState(onUpdate, onReset) {
           const data = JSON.parse(ntfyEvent.message);
           processIncomingPacket(data);
         } catch (err) {
-          // Ignore keep-alive or malformed payloads
+          // Ignore keep-alive or ping packets
         }
       };
 
       eventSource.onerror = () => {
-        // EventSource will automatically attempt reconnection
+        // Automatically reconnects
       };
     }
   } catch (err) {

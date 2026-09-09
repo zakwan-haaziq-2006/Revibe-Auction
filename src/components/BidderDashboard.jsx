@@ -95,15 +95,7 @@ export default function BidderDashboard({
 
       <main className="bidder-content">
         {/* HERO: PROMINENT LIVE AUCTION ARENA */}
-        {showIntro ? (
-          <section className="bidder-standby-banner">
-            <Clock size={28} className="spin-slow" style={{ color: '#D4AF37' }} />
-            <div className="standby-text">
-              <h3>AUCTION FLOOR ON STANDBY</h3>
-              <p>The auctioneer is preparing the marquee player pool. Live bidding will commence shortly.</p>
-            </div>
-          </section>
-        ) : currentPlayer ? (
+        {currentPlayer ? (
           <section className="bidder-live-arena">
             <div className="live-arena-header">
               <div className="arena-title">

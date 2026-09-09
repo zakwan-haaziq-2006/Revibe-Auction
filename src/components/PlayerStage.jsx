@@ -1,7 +1,34 @@
-import React from 'react';
-import { User, Gavel, Award, ShieldAlert, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Gavel, Award, ShieldAlert, CheckCircle2, AlertCircle, Timer, RotateCcw } from 'lucide-react';
+import { sounds } from '../utils/soundEffects';
 
 export default function PlayerStage({ player, status, leadingTeam, currentBid }) {
+  const [timerSeconds, setTimerSeconds] = useState(15);
+  const [timerRunning, setTimerRunning] = useState(true);
+
+  // Auto-reset bid countdown timer whenever a new bid or player arrives
+  useEffect(() => {
+    setTimerSeconds(15);
+    setTimerRunning(true);
+  }, [currentBid, player?.id]);
+
+  // Tick countdown timer
+  useEffect(() => {
+    if (!timerRunning || status !== 'LIVE') return;
+    if (timerSeconds <= 0) return;
+
+    const interval = setInterval(() => {
+      setTimerSeconds((prev) => {
+        if (prev === 4) {
+          sounds.playBidSound();
+        }
+        return Math.max(0, prev - 1);
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timerRunning, timerSeconds, status]);
+
   if (!player) {
     return (
       <div className="auction-stage-box">
@@ -28,7 +55,7 @@ export default function PlayerStage({ player, status, leadingTeam, currentBid })
       <Gavel className="stage-gavel-icon" />
 
       {/* Sold / Unsold Notification Banner */}
-      {status !== 'LIVE' && (
+      {status !== 'LIVE' ? (
         <div className={`status-banner ${status}`}>
           <span className={`status-dot ${status.toLowerCase()}`}></span>
           {status === 'SOLD' && (
@@ -43,6 +70,66 @@ export default function PlayerStage({ player, status, leadingTeam, currentBid })
               PLAYER UNSOLD — PASSED TO ACCELERATED ROUND
             </>
           )}
+        </div>
+      ) : (
+        /* Live Stage Bid Countdown Timer Banner */
+        <div 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            padding: '0.35rem 1.1rem',
+            borderRadius: '20px',
+            background: timerSeconds <= 5 
+              ? 'rgba(239, 68, 68, 0.2)' 
+              : 'rgba(17, 17, 17, 0.85)',
+            border: timerSeconds <= 5 
+              ? '1.5px solid #EF4444' 
+              : '1.5px solid rgba(212, 175, 55, 0.5)',
+            boxShadow: timerSeconds <= 5 
+              ? '0 0 20px rgba(239, 68, 68, 0.5)' 
+              : '0 4px 15px rgba(0, 0, 0, 0.3)',
+            marginBottom: '0.35rem',
+            transition: 'all 0.3s ease',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <Timer 
+            size={16} 
+            className={timerSeconds <= 5 ? 'pulse-icon' : ''} 
+            style={{ color: timerSeconds <= 5 ? '#EF4444' : '#D4AF37' }} 
+          />
+          <span 
+            style={{ 
+              fontFamily: 'var(--font-subdisplay)', 
+              fontSize: '0.88rem', 
+              fontWeight: 800, 
+              color: timerSeconds <= 5 ? '#EF4444' : '#FFF',
+              letterSpacing: '1px'
+            }}
+          >
+            BID CLOCK: {timerSeconds > 0 ? `00:${timerSeconds < 10 ? '0' : ''}${timerSeconds}` : 'GOING ONCE, TWICE... SOLD!'}
+          </span>
+          <button
+            onClick={() => setTimerSeconds(15)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.12)',
+              border: 'none',
+              color: '#D4AF37',
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              padding: '0.15rem 0.45rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.2rem'
+            }}
+            title="Reset 15s Timer"
+          >
+            <RotateCcw size={10} />
+            <span>15s</span>
+          </button>
         </div>
       )}
 

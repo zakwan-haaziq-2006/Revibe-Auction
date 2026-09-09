@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Play, Trophy } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
-export default function IntroScreen({ onStartAuction }) {
+export default function IntroScreen({ onStartAuction, onClose }) {
   const [countdown, setCountdown] = useState(null); // null = intro screen, number = countdown state
 
   const handleStartClick = () => {
@@ -34,6 +34,35 @@ export default function IntroScreen({ onStartAuction }) {
   return (
     <div className="intro-screen-overlay">
       <div className="revibe-bg-watermark"></div>
+
+      {onClose && (
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '1.25rem',
+            right: '1.5rem',
+            background: 'rgba(0, 0, 0, 0.55)',
+            border: '1.5px solid rgba(255, 255, 255, 0.25)',
+            color: '#FFFFFF',
+            padding: '0.45rem 0.95rem',
+            borderRadius: '20px',
+            fontFamily: 'var(--font-subdisplay)',
+            fontSize: '0.82rem',
+            fontWeight: 800,
+            cursor: 'pointer',
+            zIndex: 100,
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem'
+          }}
+          title="Dismiss Intro and Return to Stage"
+        >
+          <span>✕ SKIP INTRO</span>
+        </button>
+      )}
 
       {countdown === null ? (
         /* --- FULL SCREEN MINIMAL INTRO --- */

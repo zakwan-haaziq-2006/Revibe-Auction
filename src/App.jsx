@@ -469,7 +469,10 @@ export default function App() {
       
       {/* Intro Animation & 10-Second Countdown Screen */}
       {showIntro && (
-        <IntroScreen onStartAuction={handleStartAuction} />
+        <IntroScreen 
+          onStartAuction={handleStartAuction} 
+          onClose={() => setShowIntro(false)} 
+        />
       )}
 
       {/* Category Completion Transition Modal */}
@@ -495,6 +498,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         onOpenHelp={() => setShowShortcutsModal(true)}
         onOpenRules={() => setShowRulesModal(true)}
+        onOpenIntro={() => setShowIntro(true)}
         onResetData={handleResetData}
         onLogout={handleLogout}
       />

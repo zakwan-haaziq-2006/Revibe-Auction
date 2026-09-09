@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Maximize, HelpCircle, RefreshCw, Gavel, Users, Shield, Menu, X, BookOpen, LogOut } from 'lucide-react';
+import { Volume2, VolumeX, Maximize, HelpCircle, RefreshCw, Gavel, Users, Shield, Menu, X, BookOpen, LogOut, Play } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
 export default function Header({ 
@@ -10,6 +10,7 @@ export default function Header({
   setActiveTab,
   onOpenHelp, 
   onOpenRules,
+  onOpenIntro,
   onResetData,
   onLogout
 }) {
@@ -77,6 +78,33 @@ export default function Header({
 
       {/* Right Controls + Expandable Toggle Bar Button */}
       <div className="header-controls" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+        {onOpenIntro && (
+          <button
+            onClick={onOpenIntro}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '12px',
+              border: '1.5px solid #D4AF37',
+              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.08) 100%)',
+              backdropFilter: 'blur(10px)',
+              color: '#B48A18',
+              fontFamily: 'var(--font-subdisplay)',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              letterSpacing: '0.5px',
+              boxShadow: '0 4px 12px rgba(212, 175, 55, 0.18)'
+            }}
+            title="Play 10-Second Countdown & Intro Animation"
+          >
+            <Play size={14} fill="currentColor" />
+            <span>INTRO & TIMER</span>
+          </button>
+        )}
+
         <button
           onClick={onOpenRules}
           style={{

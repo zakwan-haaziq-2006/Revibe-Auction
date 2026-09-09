@@ -119,7 +119,7 @@ export default function LoginScreen({ onLoginSuccess }) {
               id="login-username"
               type="text"
               className="login-input"
-              placeholder={loginMode === 'admin' ? 'admin.auction@revibe' : 'csk'}
+              placeholder={loginMode === 'admin' ? 'revibe@admin' : 'csk'}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -135,7 +135,7 @@ export default function LoginScreen({ onLoginSuccess }) {
               id="login-password"
               type="password"
               className="login-input"
-              placeholder={loginMode === 'admin' ? 'auction@revibe.2026' : 'csk@revibe'}
+              placeholder={loginMode === 'admin' ? 'revibe@auction' : 'csk@revibe'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

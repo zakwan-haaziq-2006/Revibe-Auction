@@ -1419,6 +1419,11 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-height: 0;
+}
+
+.bidder-content > * {
+  flex-shrink: 0;
 }
 
 /* TOP PURSE CARDS GRID */
@@ -1426,6 +1431,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
+  flex-shrink: 0;
 }
 
 .purse-card {
@@ -1535,79 +1541,439 @@ html, body {
   color: #444;
 }
 
-/* LIVE STAGE MONITOR BANNER */
-.live-stage-monitor-banner {
-  background: linear-gradient(135deg, #18181A 0%, #242428 100%);
-  border: 1.5px solid rgba(212, 175, 55, 0.3);
+/* PROMINENT LIVE AUCTION ARENA (BIDDER DASHBOARD) */
+.bidder-standby-banner {
+  background: linear-gradient(135deg, #18181C 0%, #222228 100%);
+  border: 1.5px dashed rgba(212, 175, 55, 0.4);
   border-radius: 18px;
-  padding: 1rem 1.5rem;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.bidder-standby-banner .standby-text h3 {
+  font-family: var(--font-subdisplay);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #D4AF37;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.bidder-standby-banner .standby-text p {
+  font-size: 0.88rem;
+  color: #9CA3AF;
+  margin: 0;
+}
+
+.bidder-live-arena {
+  background: linear-gradient(135deg, #131316 0%, #1c1c22 50%, #24242c 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  gap: 1rem;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  flex-shrink: 0;
+  min-height: fit-content;
 }
 
-.monitor-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: var(--font-subdisplay);
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: #D4AF37;
-  letter-spacing: 1px;
+.bidder-live-arena::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 30%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+  pointer-events: none;
 }
 
-.monitor-body {
+.live-arena-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
-.monitor-player-info {
+.arena-title {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-subdisplay);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #D4AF37;
+  letter-spacing: 1.2px;
 }
 
-.monitor-player-role {
-  font-size: 0.75rem;
-  color: #AAA;
-  text-transform: uppercase;
+.arena-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
   letter-spacing: 0.5px;
 }
 
-.monitor-player-name {
-  font-family: var(--font-subdisplay);
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: #FFF;
+.arena-live-indicator.sold {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
-.monitor-bid-info, .monitor-leading-info {
+.arena-live-indicator.unsold {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9CA3AF;
+  border-color: rgba(156, 163, 175, 0.3);
+}
+
+.pulsing-circle {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: pulse-ring 1.4s infinite ease-in-out;
+}
+
+.arena-leader-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10B981;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.live-arena-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1.15fr 1.15fr;
+  gap: 1.25rem;
+  align-items: stretch;
+  flex-shrink: 0;
+  min-height: 145px;
+}
+
+/* 1. Player Card */
+.arena-player-card {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.95rem 1.15rem;
+  min-height: 140px;
+  flex-shrink: 0;
+}
+
+.arena-player-avatar-box {
+  position: relative;
+  width: 92px;
+  height: 112px;
+  min-width: 92px;
+  min-height: 112px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0f0f13;
+  border: 2px solid rgba(212, 175, 55, 0.45);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.arena-player-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+.arena-player-fallback-svg {
+  width: 52px;
+  height: 52px;
+  color: #6B7280;
+}
+
+.arena-capped-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.85);
+  color: #D4AF37;
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  z-index: 2;
+}
+
+.arena-player-meta {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  gap: 0.3rem;
+  min-width: 0;
+  justify-content: center;
 }
 
-.monitor-bid-label {
-  font-size: 0.75rem;
-  color: #AAA;
+.arena-player-role-flag {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: #9CA3AF;
+  flex-wrap: wrap;
 }
 
-.monitor-bid-amount {
-  font-family: var(--font-subdisplay);
-  font-size: 1.3rem;
+.arena-player-name {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
   font-weight: 900;
-  color: #D4AF37;
+  color: #FFFFFF;
+  line-height: 1.15;
+  margin: 0.15rem 0;
+  white-space: normal;
+  word-break: break-word;
 }
 
-.monitor-leading-team {
+.arena-base-price {
+  font-size: 0.8rem;
+  color: #9CA3AF;
+}
+
+.arena-base-price strong {
+  color: #D4AF37;
   font-family: var(--font-subdisplay);
-  font-size: 1.1rem;
   font-weight: 800;
-  color: #FFF;
+}
+
+.arena-bid-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-height: 140px;
+}
+
+.arena-bid-box {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1.5px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.05);
+  flex: 1;
+}
+
+.arena-bid-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #9CA3AF;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.arena-bid-amount {
+  font-family: var(--font-subdisplay);
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: #FFD700;
+  line-height: 1.1;
+  margin: 0.2rem 0;
+  text-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+}
+
+.arena-status-announcement {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-top: 0.2rem;
+}
+
+.arena-status-announcement.sold {
+  color: #10B981;
+}
+
+.arena-status-announcement.unsold {
+  color: #EF4444;
+}
+
+.arena-recent-logs {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  padding: 0.4rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.logs-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #9CA3AF;
+  letter-spacing: 0.8px;
+}
+
+.logs-items {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.log-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.72rem;
+}
+
+.log-team-tag {
+  font-weight: 900;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+
+.log-amount {
+  color: #FFD700;
+  font-weight: 700;
+  font-family: var(--font-subdisplay);
+}
+
+/* 3. Leading Team Showcase */
+.arena-leading-showcase {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  min-height: 140px;
+  flex-shrink: 0;
+}
+
+.arena-leading-showcase.has-leader {
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.leading-showcase-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #9CA3AF;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.leading-team-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.leading-team-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.leading-team-fullname {
+  font-family: var(--font-subdisplay);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.leading-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.2rem 0.65rem;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+
+.leading-tag.own-team {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.leading-tag.rival-team {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.awaiting-bid-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: #6B7280;
+}
+
+.awaiting-bid-notice p {
+  font-weight: 700;
+  color: #9CA3AF;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.awaiting-sub {
+  font-size: 0.72rem;
+  color: #6B7280;
+  max-width: 180px;
 }
 
 /* ACQUIRED PLAYERS SECTION */
@@ -1893,18 +2259,26 @@ html, body {
     flex-wrap: wrap;
   }
 
-  .live-stage-monitor-banner {
-    padding: 0.85rem 1rem;
+  .bidder-live-arena {
+    padding: 1rem;
   }
 
-  .monitor-body {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.65rem;
+  .live-arena-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
   }
 
-  .monitor-bid-info, .monitor-leading-info {
-    align-items: flex-start;
+  .arena-player-card {
+    flex-direction: row;
+    gap: 0.85rem;
+  }
+
+  .arena-player-name {
+    font-size: 1.25rem;
+  }
+
+  .arena-bid-amount {
+    font-size: 1.85rem;
   }
 
   .acquired-players-grid {

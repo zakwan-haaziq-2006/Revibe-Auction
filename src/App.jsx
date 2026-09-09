@@ -68,22 +68,28 @@ export default function App() {
   // Ref to prevent feedback loop when receiving remoteBroadcast state
   const isReceivingRemoteSync = useRef(false);
 
+  // Helper to apply incoming remote sync state safely
+  const applyRemoteState = useCallback((newState) => {
+    if (!newState) return;
+    isReceivingRemoteSync.current = true;
+    if (newState.teams) setTeams(newState.teams);
+    if (newState.players) setPlayers(newState.players);
+    if (typeof newState.currentPlayerIndex === 'number') setCurrentPlayerIndex(newState.currentPlayerIndex);
+    if (typeof newState.currentBid === 'number') setCurrentBid(newState.currentBid);
+    setLeadingTeam(newState.leadingTeam || null);
+    if (newState.status) setStatus(newState.status);
+    if (newState.completedPlayersMap) setCompletedPlayersMap(newState.completedPlayersMap);
+    if (newState.bidHistory) setBidHistory(newState.bidHistory);
+    if (newState.bidLogs) setBidLogs(newState.bidLogs);
+    if (newState.lastSoldPlayer !== undefined) setLastSoldPlayer(newState.lastSoldPlayer);
+    if (typeof newState.showIntro === 'boolean') setShowIntro(newState.showIntro);
+  }, []);
+
   // Real-time multi-tab BroadcastChannel & storage event subscription
   useEffect(() => {
     const unsubscribe = subscribeToAuctionState(
       (newState) => {
-        isReceivingRemoteSync.current = true;
-        if (newState.teams) setTeams(newState.teams);
-        if (newState.players) setPlayers(newState.players);
-        if (typeof newState.currentPlayerIndex === 'number') setCurrentPlayerIndex(newState.currentPlayerIndex);
-        if (typeof newState.currentBid === 'number') setCurrentBid(newState.currentBid);
-        setLeadingTeam(newState.leadingTeam || null);
-        if (newState.status) setStatus(newState.status);
-        if (newState.completedPlayersMap) setCompletedPlayersMap(newState.completedPlayersMap);
-        if (newState.bidHistory) setBidHistory(newState.bidHistory);
-        if (newState.bidLogs) setBidLogs(newState.bidLogs);
-        if (newState.lastSoldPlayer !== undefined) setLastSoldPlayer(newState.lastSoldPlayer);
-        if (typeof newState.showIntro === 'boolean') setShowIntro(newState.showIntro);
+        applyRemoteState(newState);
       },
       () => {
         isReceivingRemoteSync.current = true;
@@ -102,10 +108,38 @@ export default function App() {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [applyRemoteState]);
 
-  // Save to localStorage & broadcast whenever local state changes
+  // Resilient fallback sync for non-admin sessions (bidders & login screen)
   useEffect(() => {
+    if (currentUser && currentUser.role === 'admin') return;
+
+    const syncFromStorage = () => {
+      const latest = loadAuctionState();
+      if (latest) {
+        applyRemoteState(latest);
+      }
+    };
+
+    // Sync on window focus
+    window.addEventListener('focus', syncFromStorage);
+
+    // Continuous 1-second interval to guarantee user side reflects live auction without delay
+    const interval = setInterval(syncFromStorage, 1000);
+
+    return () => {
+      window.removeEventListener('focus', syncFromStorage);
+      clearInterval(interval);
+    };
+  }, [currentUser, applyRemoteState]);
+
+  // Save to localStorage & broadcast whenever local state changes — STRICTLY ADMIN ONLY!
+  useEffect(() => {
+    // Only Admin can write and broadcast auction state to prevent bidder tabs from overwriting live data
+    if (!currentUser || currentUser.role !== 'admin') {
+      return;
+    }
+
     if (isReceivingRemoteSync.current) {
       isReceivingRemoteSync.current = false;
       return;
@@ -125,6 +159,7 @@ export default function App() {
       showIntro
     });
   }, [
+    currentUser,
     teams,
     players,
     currentPlayerIndex,
@@ -301,13 +336,13 @@ export default function App() {
   };
 
   // Undo Last Bid
-  const handleUndoBid = () => {
+  const handleUndoBid = useCallback(() => {
     if (bidHistory.length === 0 || status !== 'LIVE' || showIntro || showCategoryTransition) return;
     const lastState = bidHistory[bidHistory.length - 1];
     setLeadingTeam(lastState.leadingTeam);
     setCurrentBid(lastState.currentBid);
     setBidHistory((prev) => prev.slice(0, -1));
-  };
+  }, [bidHistory, status, showIntro, showCategoryTransition]);
 
   const handleSelectPlayerFromQueue = (player) => {
     const idx = players.findIndex((p) => p.id === player.id);
@@ -340,6 +375,11 @@ export default function App() {
 
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
+    // Immediately hydrate state from localStorage upon login to show the active live player
+    const latestState = loadAuctionState();
+    if (latestState) {
+      applyRemoteState(latestState);
+    }
   };
 
   const handleLogout = () => {
@@ -409,10 +449,14 @@ export default function App() {
     return (
       <BidderDashboard
         team={bidderTeam}
+        teams={teams}
         currentPlayer={currentPlayer}
         currentBid={currentBid}
         leadingTeam={leadingTeam}
         status={status}
+        bidLogs={bidLogs}
+        lastSoldPlayer={lastSoldPlayer}
+        showIntro={showIntro}
         onLogout={handleLogout}
       />
     );

@@ -17,7 +17,7 @@ export default function FranchiseHotkeys({
     <div className="franchise-hotkey-panel">
       <div className="panel-header-title">
         <span>OFFICIAL FRANCHISE BIDDING HOTKEYS</span>
-        <span>PRESS LETTER KEYS (C=CSK, R=RCB, M=MI, K=KKR, S=SRH, G=GT, L=LSG, D=DC, P=PBKS, J=RR) OR CLICK</span>
+        <span>PRESS LETTER KEYS (C=CSK, R=RCB, M=MI, K=KKR, S=SRH, G=GT, L=LSG, D=DC, P=PBKS, J=RR, T=KTK, H=DCG) OR CLICK</span>
       </div>
 
       <div className="teams-grid">

@@ -586,7 +586,9 @@ export default function App() {
         'G': 'gt',  '7': 'gt',
         'L': 'lsg', '8': 'lsg',
         'D': 'dc',  '9': 'dc',
-        'P': 'pbks','0': 'pbks'
+        'P': 'pbks','0': 'pbks',
+        'T': 'ktk',
+        'H': 'dcg'
       };
 
       if (teamHotkeyMap[key]) {

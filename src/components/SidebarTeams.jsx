@@ -48,7 +48,7 @@ export default function SidebarTeams({ teams, onInspectTeam }) {
             {totalPlayersBought} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>/ 250</span>
           </div>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            Across 10 Franchises
+            Across 12 Franchises
           </span>
         </div>
 
@@ -66,7 +66,7 @@ export default function SidebarTeams({ teams, onInspectTeam }) {
         </div>
       </div>
 
-      {/* 10 Team Cards Grid */}
+      {/* 12 Team Cards Grid */}
       <h3 style={{ fontFamily: 'var(--font-subdisplay)', letterSpacing: '1px', fontSize: '1.1rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <Shield size={18} style={{ color: 'var(--primary-red)' }} />
         <span>FRANCHISE PURSE & SQUAD ANALYSIS</span>

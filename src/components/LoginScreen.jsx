@@ -173,7 +173,7 @@ export default function LoginScreen({ onLoginSuccess, onRefresh, isRefreshing = 
             <Sparkles size={14} /> Quick Select Franchise Team
           </div>
           <div className="quick-cred-buttons">
-            {INITIAL_TEAMS.slice(0, 5).map((team) => (
+            {INITIAL_TEAMS.slice(0, 12).map((team) => (
               <button
                 key={team.id}
                 type="button"

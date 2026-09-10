@@ -82,7 +82,7 @@ export default function CategoryTransitionModal({
                   FRANCHISE TEAM OVERVIEW ({completedCategory} FINISHED)
                 </h3>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Complete Squad Breakdown & Purse Analysis for All 10 Teams
+                  Complete Squad Breakdown & Purse Analysis for All 12 Teams
                 </span>
               </div>
             </div>

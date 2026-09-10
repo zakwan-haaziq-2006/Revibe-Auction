@@ -87,7 +87,7 @@ export default function IntroScreen({ onStartAuction, onClose }) {
           </h1>
 
           <p className="intro-minimal-subtext">
-            10 Franchises • ₹80 Crore Purse • 160+ Star Cricketers
+            12 Franchises • ₹80 Crore Purse • 160+ Star Cricketers
           </p>
 
           <button className="intro-start-btn" onClick={handleStartClick} style={{ marginTop: '1.8rem' }}>

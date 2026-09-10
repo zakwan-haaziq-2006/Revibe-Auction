@@ -13,6 +13,8 @@ export default function ShortcutsModal({ onClose }) {
     { key: 'D', description: 'Bid for Delhi Capitals (DC)' },
     { key: 'P', description: 'Bid for Punjab Kings (PBKS)' },
     { key: 'J', description: 'Bid for Rajasthan Royals (RR)' },
+    { key: 'T', description: 'Bid for Kochi Tuskers Kerala (KTK)' },
+    { key: 'H', description: 'Bid for Deccan Chargers (DCG)' },
     { key: 'SPACE / ENTER', description: 'Mark current player as SOLD to leading team' },
     { key: 'U', description: 'Mark current player as UNSOLD' },
     { key: '→ / N', description: 'Advance to NEXT player' },

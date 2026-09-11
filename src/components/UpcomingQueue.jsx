@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { Users, Check, X, Play, Filter, Sparkles, Award } from 'lucide-react';
 
+function getPlayerInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
 export default function UpcomingQueue({ 
   players, 
   currentPlayerId, 
@@ -8,6 +15,7 @@ export default function UpcomingQueue({
   completedPlayersMap 
 }) {
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [imgErrors, setImgErrors] = useState({});
 
   const filteredPlayers = roleFilter === 'ALL'
     ? players
@@ -146,14 +154,17 @@ export default function UpcomingQueue({
                     justifyContent: 'center'
                   }}
                 >
-                  {(player.photoUrl || player.image) ? (
+                  {(player.photoUrl || player.image) && !imgErrors[player.id] ? (
                     <img 
                       src={player.photoUrl || player.image} 
                       alt={player.name} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={() => setImgErrors(prev => ({ ...prev, [player.id]: true }))}
                     />
                   ) : (
-                    <Users size={28} style={{ color: 'var(--primary-red)' }} />
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary-red)', fontFamily: 'var(--font-subdisplay)' }}>
+                      {getPlayerInitials(player.name)}
+                    </span>
                   )}
                 </div>
 

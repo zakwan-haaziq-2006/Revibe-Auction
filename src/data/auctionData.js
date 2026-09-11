@@ -112,7 +112,7 @@ export const AUCTION_SETS = [
 
 export const INITIAL_PLAYERS = [
   // === 01. MARQUEE SET 1 (6) ===
-  { id: 'ms1-1', name: 'Virat Kohli', role: 'Batsman', status: 'Capped', basePrice: 1.00, country: 'India', flag: '\u{1F1EE}\u{1F1F3}', photoUrl: '/players/virat kohli.avif', set: 'Marquee Set 1' },
+  { id: 'ms1-1', name: 'Virat Kohli', role: 'Batsman', status: 'Capped', basePrice: 2.00, country: 'India', flag: '\u{1F1EE}\u{1F1F3}', photoUrl: '/players/virat kohli.avif', set: 'Marquee Set 1' },
   { id: 'ms1-2', name: 'Rohit Sharma', role: 'Batsman', status: 'Capped', basePrice: 2.00, country: 'India', flag: '\u{1F1EE}\u{1F1F3}', photoUrl: '/players/rohti sharma.webp', set: 'Marquee Set 1' },
   { id: 'ms1-3', name: 'Jasprit Bumrah', role: 'Bowler', status: 'Capped', basePrice: 2.00, country: 'India', flag: '\u{1F1EE}\u{1F1F3}', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/02/Jasprit_Bumrah_in_PMO_New_Delhi.jpg', set: 'Marquee Set 1' },
   { id: 'ms1-4', name: 'Rishabh Pant', role: 'Wicketkeeper', status: 'Capped', basePrice: 1.50, country: 'India', flag: '\u{1F1EE}\u{1F1F3}', photoUrl: '/players/rishab pant.webp', set: 'Marquee Set 1' },

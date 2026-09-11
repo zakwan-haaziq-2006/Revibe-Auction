@@ -66,7 +66,7 @@ export default function SidebarTeams({ teams, onInspectTeam }) {
         </div>
       </div>
 
-      {/* 10 Team Cards Grid */}
+      {/* 12 Team Cards Grid */}
       <h3 style={{ fontFamily: 'var(--font-subdisplay)', letterSpacing: '1px', fontSize: '1.1rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <Shield size={18} style={{ color: 'var(--primary-red)' }} />
         <span>FRANCHISE PURSE & SQUAD ANALYSIS</span>

@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LogOut, Wallet, TrendingUp, CreditCard, Shield, Users, 
   Search, Award, UserCheck, AlertCircle, Radio, Sparkles, User,
   CheckCircle2, Clock, Activity, Flame, RotateCw
 } from 'lucide-react';
+
+function getPlayerInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
 
 export default function BidderDashboard({ 
   team, 
@@ -21,9 +28,14 @@ export default function BidderDashboard({
   lastSyncTime = null
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL'); // 'ALL' | 'Batsman' | 'Bowler' | 'All-Rounder' | 'Wicketkeeper'
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [localRefreshing, setLocalRefreshing] = useState(false);
   const [showSyncSuccess, setShowSyncSuccess] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [currentPlayer?.id]);
 
   const isSpinning = isRefreshing || localRefreshing;
 
@@ -180,10 +192,14 @@ export default function BidderDashboard({
                       src={currentPlayer.photoUrl || currentPlayer.image} 
                       alt={currentPlayer.name} 
                       className="arena-player-img"
+                      onError={() => setImgError(true)}
                     />
-                  ) : (
-                    <User className="arena-player-fallback-svg" />
-                  )}
+                  ) : null}
+                  {(!currentPlayer.photoUrl && !currentPlayer.image) || imgError ? (
+                    <div className="player-avatar-initials" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: 'var(--primary-red)' }}>
+                      {getPlayerInitials(currentPlayer.name)}
+                    </div>
+                  ) : null}
                   <span className="arena-capped-badge">
                     {currentPlayer.status || 'Capped'}
                   </span>

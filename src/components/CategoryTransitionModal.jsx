@@ -9,7 +9,8 @@ export default function CategoryTransitionModal({
   nextPlayerCount, 
   teams = [],
   onInspectTeam,
-  onProceed 
+  onProceed,
+  isSetComplete = false
 }) {
   const [showOverview, setShowOverview] = useState(false);
 
@@ -40,31 +41,43 @@ export default function CategoryTransitionModal({
           </div>
 
           <div className="completed-badge">
-            <CheckCircle size={18} /> CATEGORY COMPLETED
+            <CheckCircle size={18} /> {isSetComplete ? 'SET COMPLETED' : 'CATEGORY COMPLETED'}
           </div>
 
           <h2 className="completed-title">
-            {completedCategory || 'BATSMEN'} <span className="crimson-gold-text">FINISHED</span>
+            {completedCategory || 'SET'} <span className="crimson-gold-text">{isSetComplete ? 'DONE' : 'FINISHED'}</span>
           </h2>
 
-          <div className="next-category-minimal">
-            <span className="next-tag">UPCOMING CATEGORY</span>
-            <h1 className="next-category-title">{nextCategory || 'WICKETKEEPERS'}</h1>
-            <p className="next-category-desc">
-              <UserCheck size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-              {nextPlayerCount ? `${nextPlayerCount} Players` : 'Next Set'} Ready for Auction Bidding
-            </p>
-          </div>
+          {!isSetComplete && nextCategory && (
+            <div className="next-category-minimal">
+              <span className="next-tag">UPCOMING CATEGORY</span>
+              <h1 className="next-category-title">{nextCategory}</h1>
+              <p className="next-category-desc">
+                <UserCheck size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+                {nextPlayerCount ? `${nextPlayerCount} Players` : 'Next Set'} Ready for Auction Bidding
+              </p>
+            </div>
+          )}
+
+          {isSetComplete && (
+            <div className="next-category-minimal">
+              <p className="next-category-desc">
+                All players in this set have been auctioned. Select the next set to continue.
+              </p>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', maxWidth: '380px', marginTop: '1.2rem' }}>
-            <button className="view-overview-btn" onClick={() => setShowOverview(true)}>
-              <BarChart2 size={18} />
-              <span>LIVE TEAM OVERVIEW</span>
-            </button>
+            {!isSetComplete && (
+              <button className="view-overview-btn" onClick={() => setShowOverview(true)}>
+                <BarChart2 size={18} />
+                <span>LIVE TEAM OVERVIEW</span>
+              </button>
+            )}
 
             <button className="proceed-category-btn" onClick={handleProceedClick}>
-              <span>PROCEED TO {nextCategory || 'NEXT CATEGORY'}</span>
+              <span>{isSetComplete ? 'BACK TO SETS' : `PROCEED TO ${nextCategory || 'NEXT CATEGORY'}`}</span>
               <ArrowRight size={22} />
             </button>
           </div>
@@ -82,7 +95,7 @@ export default function CategoryTransitionModal({
                   FRANCHISE TEAM OVERVIEW ({completedCategory} FINISHED)
                 </h3>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Complete Squad Breakdown & Purse Analysis for All 10 Teams
+                  Complete Squad Breakdown & Purse Analysis for All 12 Teams
                 </span>
               </div>
             </div>

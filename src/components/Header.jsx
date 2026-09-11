@@ -253,7 +253,7 @@ export default function Header({
             </button>
 
             <button
-              onClick={() => handleTabSelect('queue')}
+              onClick={() => handleTabSelect('sets')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -261,8 +261,8 @@ export default function Header({
                 padding: '0.65rem 0.95rem',
                 borderRadius: '12px',
                 border: 'none',
-                background: activeTab === 'queue' ? 'var(--primary-red)' : 'rgba(0,0,0,0.03)',
-                color: activeTab === 'queue' ? '#FFFFFF' : '#111111',
+                background: activeTab === 'sets' ? 'var(--primary-red)' : 'rgba(0,0,0,0.03)',
+                color: activeTab === 'sets' ? '#FFFFFF' : '#111111',
                 fontFamily: 'var(--font-subdisplay)',
                 fontSize: '0.9rem',
                 fontWeight: 800,
@@ -272,7 +272,7 @@ export default function Header({
               }}
             >
               <Users size={17} />
-              <span>AUCTION QUEUE</span>
+              <span>SELECT SETS</span>
             </button>
 
             <div style={{ height: '1px', background: 'rgba(0,0,0,0.08)', margin: '0.2rem 0' }} />

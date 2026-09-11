@@ -55,7 +55,7 @@ export default function LoginScreen({ onLoginSuccess, onRefresh, isRefreshing = 
             teamCode: matchedTeam.code
           });
         } else {
-          setErrorMsg(`Incorrect password for ${matchedTeam.name}! Try '${matchedTeam.username}@revibe'`);
+          setErrorMsg(`Incorrect password for ${matchedTeam.name}!`);
         }
       } else {
         setErrorMsg('Team username not found! Use team code like csk, mi, kkr, rcb, etc.');
@@ -138,7 +138,7 @@ export default function LoginScreen({ onLoginSuccess, onRefresh, isRefreshing = 
               id="login-username"
               type="text"
               className="login-input"
-              placeholder={loginMode === 'admin' ? 'revibe@admin' : 'csk'}
+              placeholder={loginMode === 'admin' ? 'Enter admin username' : 'csk'}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -154,7 +154,7 @@ export default function LoginScreen({ onLoginSuccess, onRefresh, isRefreshing = 
               id="login-password"
               type="password"
               className="login-input"
-              placeholder={loginMode === 'admin' ? 'revibe@auction' : 'csk@revibe'}
+              placeholder={loginMode === 'admin' ? 'Enter password' : 'csk@revibe'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -173,7 +173,7 @@ export default function LoginScreen({ onLoginSuccess, onRefresh, isRefreshing = 
             <Sparkles size={14} /> Quick Select Franchise Team
           </div>
           <div className="quick-cred-buttons">
-            {INITIAL_TEAMS.slice(0, 5).map((team) => (
+            {INITIAL_TEAMS.slice(0, 12).map((team) => (
               <button
                 key={team.id}
                 type="button"

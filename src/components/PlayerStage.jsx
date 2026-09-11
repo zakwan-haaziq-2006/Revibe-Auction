@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Gavel, CheckCircle2, AlertCircle } from 'lucide-react';
 
+function getPlayerInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
 export default function PlayerStage({ player, status, leadingTeam, currentBid }) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [player?.id]);
   if (!player) {
     return (
       <div className="auction-stage-box">
@@ -61,14 +73,15 @@ export default function PlayerStage({ player, status, leadingTeam, currentBid })
               {player.flag ? `${player.flag} ` : ''}{player.country || 'INDIA'}
             </span>
 
-            {(player.photoUrl || player.image) ? (
+            {(player.photoUrl || player.image) && !imgError ? (
               <img 
                 src={player.photoUrl || player.image} 
                 alt={player.name} 
                 className="player-avatar-img"
+                onError={() => setImgError(true)}
               />
             ) : (
-              <User className="player-avatar-svg" />
+              <div className="player-avatar-initials">{getPlayerInitials(player.name)}</div>
             )}
           </div>
 

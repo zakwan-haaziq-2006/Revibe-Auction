@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Play, Trophy } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
-export default function IntroScreen({ onStartAuction, onClose }) {
+export default function IntroScreen({ onStartAuction, onClose, categoryName }) {
   const [countdown, setCountdown] = useState(null); // null = intro screen, number = countdown state
 
   const handleStartClick = () => {
     sounds.playCountdownMusic();
-    setCountdown(10);
+    setCountdown(5);
   };
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function IntroScreen({ onStartAuction, onClose }) {
       sounds.playBidSound();
       onStartAuction();
     }
-  }, [countdown, onStartAuction]);
+  }, [countdown]);
 
   return (
     <div className="intro-screen-overlay">
@@ -87,7 +87,7 @@ export default function IntroScreen({ onStartAuction, onClose }) {
           </h1>
 
           <p className="intro-minimal-subtext">
-            12 Franchises • ₹80 Crore Purse • 160+ Star Cricketers
+            10 Franchises • ₹80 Crore Purse • 160+ Star Cricketers
           </p>
 
           <button className="intro-start-btn" onClick={handleStartClick} style={{ marginTop: '1.8rem' }}>
@@ -105,7 +105,7 @@ export default function IntroScreen({ onStartAuction, onClose }) {
           </div>
 
           <span className="countdown-category-label">GET READY FOR</span>
-          <h2 className="countdown-category-title">BATSMEN CATEGORY</h2>
+          <h2 className="countdown-category-title">{categoryName || 'BATSMEN CATEGORY'}</h2>
 
           <div className="countdown-timer-circle">
             <svg className="countdown-svg" viewBox="0 0 100 100">
@@ -115,7 +115,7 @@ export default function IntroScreen({ onStartAuction, onClose }) {
                 cx="50" 
                 cy="50" 
                 r="44"
-                style={{ strokeDashoffset: `${(44 * 2 * Math.PI) * (1 - countdown / 10)}px` }}
+                style={{ strokeDashoffset: `${(44 * 2 * Math.PI) * (1 - countdown / 5)}px` }}
               ></circle>
             </svg>
             <span className="countdown-number-display">

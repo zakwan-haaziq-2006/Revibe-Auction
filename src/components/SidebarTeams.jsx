@@ -48,7 +48,7 @@ export default function SidebarTeams({ teams, onInspectTeam }) {
             {totalPlayersBought} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>/ 250</span>
           </div>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            Across 12 Franchises
+            Across 10 Franchises
           </span>
         </div>
 

@@ -3,7 +3,7 @@ import confetti from 'canvas-confetti';
 import Header from './components/Header';
 import PlayerStage from './components/PlayerStage';
 import ActionBar from './components/ActionBar';
-import UpcomingQueue from './components/UpcomingQueue';
+import SetsView from './components/SetsView';
 import SidebarTeams from './components/SidebarTeams';
 import ShortcutsModal from './components/ShortcutsModal';
 import TeamDetailModal from './components/TeamDetailModal';
@@ -45,7 +45,7 @@ export default function App() {
   const [teams, setTeams] = useState(initialSyncState?.teams || INITIAL_TEAMS);
   const [players, setPlayers] = useState(initialSyncState?.players || INITIAL_PLAYERS);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(initialSyncState?.currentPlayerIndex ?? 0);
-  const [activeTab, setActiveTab] = useState('bidding'); // 'bidding' | 'teams' | 'queue'
+  const [activeTab, setActiveTab] = useState('sets'); // 'bidding' | 'teams' | 'sets'
   
   const currentPlayer = players[currentPlayerIndex] || players[0];
   
@@ -64,6 +64,11 @@ export default function App() {
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [inspectedTeam, setInspectedTeam] = useState(null);
   const [celebrationActive, setCelebrationActive] = useState(false);
+  
+  // Set-based auction flow
+  const [activeSetName, setActiveSetName] = useState(null);
+  const [reauctionPlayerIds, setReauctionPlayerIds] = useState(null);
+  const pendingStartIdxRef = useRef(0);
 
   // Intro & Category Transition States
   const [showIntro, setShowIntro] = useState(initialSyncState?.showIntro ?? false);
@@ -339,22 +344,42 @@ export default function App() {
     setCompletedPlayersMap((prev) => ({ ...prev, [currentPlayer.id]: 'UNSOLD' }));
   }, [status, showIntro, showCategoryTransition, currentPlayer, leadingTeam, currentBid, teams, completedPlayersMap]);
 
-  // Handle NEXT PLAYER (Arrow Right / N Key)
+  // Set-based auction: Get next unsold player in current set
+  const getNextInSet = useCallback((setName, fromIdx) => {
+    for (let i = fromIdx + 1; i < players.length; i++) {
+      if (players[i].set === setName && !completedPlayersMap[players[i].id]) return i;
+    }
+    return -1;
+  }, [players, completedPlayersMap]);
+
+  // Set-based auction: Get next reauction player
+  const getNextReauction = useCallback((fromIdx) => {
+    if (!reauctionPlayerIds) return -1;
+    for (let i = fromIdx + 1; i < players.length; i++) {
+      if (reauctionPlayerIds.has(players[i].id) && !completedPlayersMap[players[i].id]) return i;
+    }
+    return -1;
+  }, [players, reauctionPlayerIds, completedPlayersMap]);
+
+  // Handle NEXT PLAYER (Arrow Right / N Key) — set-based
   const handleNextPlayer = useCallback(() => {
     if (showIntro || showCategoryTransition) return;
 
-    const nextIdx = (currentPlayerIndex + 1) % players.length;
-    const currentSet = players[currentPlayerIndex]?.set;
-    const nextSet = players[nextIdx]?.set;
+    let nextIdx = -1;
+    if (reauctionPlayerIds) {
+      nextIdx = getNextReauction(currentPlayerIndex);
+    } else if (activeSetName) {
+      nextIdx = getNextInSet(activeSetName, currentPlayerIndex);
+    }
 
-    // Check if transitioning to a new Category Set
-    if (currentSet && nextSet && currentSet !== nextSet) {
-      const nextCategoryPlayers = players.filter((p) => p.set === nextSet);
+    if (nextIdx === -1) {
+      // Set/Reauction complete
       setCategoryTransitionInfo({
-        completedCategory: currentSet,
-        nextCategory: nextSet,
-        nextPlayerCount: nextCategoryPlayers.length,
-        nextIdx: nextIdx
+        completedCategory: reauctionPlayerIds ? 'RE-AUCTION' : activeSetName,
+        nextCategory: null,
+        nextPlayerCount: 0,
+        nextIdx: -1,
+        isSetComplete: true
       });
       setShowCategoryTransition(true);
       return;
@@ -366,7 +391,7 @@ export default function App() {
     setStatus('LIVE');
     setBidHistory([]);
     setRedoHistory([]);
-  }, [currentPlayerIndex, players, showIntro, showCategoryTransition]);
+  }, [currentPlayerIndex, players, showIntro, showCategoryTransition, activeSetName, reauctionPlayerIds, getNextInSet, getNextReauction]);
 
   // Handle PREVIOUS PLAYER (Arrow Left / P Key)
   const handlePreviousPlayer = useCallback(() => {
@@ -383,6 +408,15 @@ export default function App() {
 
   // Proceed to Next Category handler
   const handleProceedToNextCategory = () => {
+    if (categoryTransitionInfo?.isSetComplete) {
+      // Set complete — go back to sets view
+      setActiveTab('sets');
+      setActiveSetName(null);
+      setReauctionPlayerIds(null);
+      setShowCategoryTransition(false);
+      setCategoryTransitionInfo(null);
+      return;
+    }
     if (categoryTransitionInfo) {
       const nextIdx = categoryTransitionInfo.nextIdx;
       const nextPlayer = players[nextIdx];
@@ -398,14 +432,56 @@ export default function App() {
   };
 
   // Start Auction handler from Intro
-  const handleStartAuction = () => {
+  const handleStartAuction = useCallback(() => {
+    const idx = pendingStartIdxRef.current;
     setShowIntro(false);
-    setCurrentPlayerIndex(0);
-    setCurrentBid(players[0].basePrice);
+    setCurrentPlayerIndex(idx);
+    setCurrentBid(players[idx].basePrice);
     setLeadingTeam(null);
     setStatus('LIVE');
     setBidHistory([]);
     setRedoHistory([]);
+    setActiveTab('bidding');
+  }, [players]);
+
+  // Start Auction for a specific set (triggers countdown)
+  const handleStartSet = (setName) => {
+    setActiveSetName(setName);
+    setReauctionPlayerIds(null);
+    // Eagerly compute the first unsold player in this set
+    let firstIdx = 0;
+    for (let i = 0; i < players.length; i++) {
+      if (players[i].set === setName && !completedPlayersMap[players[i].id]) {
+        firstIdx = i;
+        break;
+      }
+    }
+    pendingStartIdxRef.current = firstIdx;
+    setShowIntro(true);
+  };
+
+  // Start Re-Auction with selected unsold players
+  const handleStartReAuction = (selectedPlayers) => {
+    const ids = new Set(selectedPlayers.map((p) => p.id));
+    setReauctionPlayerIds(ids);
+    setActiveSetName('__REAUCTION__');
+    // Eagerly compute the first unsold reauction player
+    let firstIdx = 0;
+    for (let i = 0; i < players.length; i++) {
+      if (ids.has(players[i].id) && !completedPlayersMap[players[i].id]) {
+        firstIdx = i;
+        break;
+      }
+    }
+    pendingStartIdxRef.current = firstIdx;
+    setShowIntro(true);
+  };
+
+  // Back to Sets View from bidding
+  const handleBackToSets = () => {
+    setActiveTab('sets');
+    setActiveSetName(null);
+    setReauctionPlayerIds(null);
   };
 
   // Manual Increments
@@ -499,6 +575,8 @@ export default function App() {
       setBidLogs([]);
       setLastSoldPlayer(null);
       setShowIntro(true);
+      setActiveSetName(null);
+      setReauctionPlayerIds(null);
     }
   };
 
@@ -586,9 +664,7 @@ export default function App() {
         'G': 'gt',  '7': 'gt',
         'L': 'lsg', '8': 'lsg',
         'D': 'dc',  '9': 'dc',
-        'P': 'pbks','0': 'pbks',
-        'T': 'ktk',
-        'H': 'dcg'
+        'P': 'pbks','0': 'pbks'
       };
 
       if (teamHotkeyMap[key]) {
@@ -645,7 +721,8 @@ export default function App() {
       {showIntro && (
         <IntroScreen 
           onStartAuction={handleStartAuction} 
-          onClose={() => setShowIntro(false)} 
+          onClose={() => setShowIntro(false)}
+          categoryName={reauctionPlayerIds ? 'RE-AUCTION' : activeSetName}
         />
       )}
 
@@ -658,6 +735,7 @@ export default function App() {
           teams={teams}
           onInspectTeam={(team) => setInspectedTeam(team)}
           onProceed={handleProceedToNextCategory}
+          isSetComplete={categoryTransitionInfo?.isSetComplete}
         />
       )}
 
@@ -680,6 +758,34 @@ export default function App() {
       {/* Main Tabbed Views */}
       {activeTab === 'bidding' && (
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.65rem', overflow: 'hidden' }}>
+          {activeSetName && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 0.25rem', flexShrink: 0 }}>
+              <button
+                onClick={handleBackToSets}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid rgba(230, 43, 52, 0.3)',
+                  background: 'rgba(255,255,255,0.9)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'var(--primary-red)',
+                  fontFamily: 'var(--font-subdisplay)',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                ← BACK TO SETS
+              </button>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-subdisplay)', letterSpacing: '0.5px' }}>
+                {reauctionPlayerIds ? 'RE-AUCTION' : activeSetName}
+              </span>
+            </div>
+          )}
           <div className="center-stage-container" style={{ flex: 1 }}>
             <PlayerStage
               player={currentPlayer}
@@ -714,13 +820,15 @@ export default function App() {
         </main>
       )}
 
-      {activeTab === 'queue' && (
+      {activeTab === 'sets' && (
         <main style={{ flex: 1, overflowY: 'auto', padding: '0.5rem' }}>
-          <UpcomingQueue
+          <SetsView
             players={players}
             currentPlayerId={currentPlayer?.id}
             onSelectPlayer={handleSelectPlayerFromQueue}
             completedPlayersMap={completedPlayersMap}
+            onStartSet={handleStartSet}
+            onStartReAuction={handleStartReAuction}
           />
         </main>
       )}
